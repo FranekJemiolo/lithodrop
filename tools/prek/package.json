@@ -1,0 +1,8 @@
+{
+  "name": "prek",
+  "version": "0.3.8",
+  "description": "Prek CLI wrapper for npm",
+  "bin": {
+    "prek": "./bin/prek.cjs"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "name": "lithodrop",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "LithoDrop: Orbital Syndicate — A 2D physics-based arcade/strategy PWA where you pilot delivery landers to build off-world colonies",
+  "homepage": "https://FranekJemiolo.github.io/lithodrop",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FranekJemiolo/lithodrop.git"
+  },
+  "author": "Franek Jemiolo",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "lint": "oxlint",
+    "format": "prettier --write --no-error-on-unmatched-pattern \"src/**/*.{ts,tsx,json,css}\" \"tests/**/*.{ts,tsx}\" \"*.{ts,json,js,md}\"",
+    "format:check": "prettier --check --no-error-on-unmatched-pattern \"src/**/*.{ts,tsx,json,css}\" \"tests/**/*.{ts,tsx}\" \"*.{ts,json,js,md}\"",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:e2e": "playwright test",
+    "test:e2e:mobile": "playwright test --project=\"Mobile Chrome\"",
+    "test:e2e:desktop": "playwright test --project=\"Desktop Chrome\""
+  },
+  "dependencies": {
+    "@pixi/particle-emitter": "^5.0.8",
+    "idb": "^8.0.2",
+    "matter-js": "^0.20.0",
+    "pixi.js": "^8.9.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/matter-js": "^0.19.8",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "jsdom": "^29.1.1",
+    "oxlint": "^1.81.0",
+    "prek": "file:tools/prek",
+    "prettier": "^3.9.6",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.3.0",
+    "jsdom": "^26.1.0",
+    "vite-plugin-pwa": "^1.3.0",
+    "vitest": "^5.0.0"
+  }
+}

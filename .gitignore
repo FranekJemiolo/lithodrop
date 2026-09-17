@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Vite cache
+.vite/
+.vite-inspect/
+
+# TypeScript
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Test results
+test-results/
+playwright-report/
+coverage/
+
+# PWA
+dev-dist/
+
+# Logs
+*.log
+npm-debug.log*
