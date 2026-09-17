@@ -60,6 +60,16 @@ export class GameApp {
     console.log("LithoDrop: GameApp initialized ✓");
   }
 
+  private _selectedPlanetId = "luna_prime";
+
+  get selectedPlanetId(): string {
+    return this._selectedPlanetId;
+  }
+
+  set selectedPlanetId(id: string) {
+    this._selectedPlanetId = id;
+  }
+
   /** Current game phase — read-only from outside */
   get phase(): GamePhase {
     return this.currentPhase;
@@ -98,6 +108,13 @@ export class GameApp {
       case "tutorial": {
         const { TutorialScene } = await import("../scenes/TutorialScene");
         const scene = new TutorialScene(this);
+        this.sceneContainer.addChild(scene.container);
+        scene.start();
+        break;
+      }
+      case "campaign": {
+        const { CampaignScene } = await import("../scenes/CampaignScene");
+        const scene = new CampaignScene(this);
         this.sceneContainer.addChild(scene.container);
         scene.start();
         break;

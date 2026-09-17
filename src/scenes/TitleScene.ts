@@ -127,9 +127,9 @@ export class TitleScene {
   private buildStartButton(): void {
     const { width, height } = this.gameApp.app.screen;
     const cx = width / 2;
-    const buttonY = height * 0.62;
+    const buttonY = height * 0.58;
     const bw = Math.min(260, width * 0.4);
-    const bh = 52;
+    const bh = 50;
 
     // Button background
     const btnBg = new Graphics();
@@ -186,6 +186,56 @@ export class TitleScene {
     });
 
     this.container.addChild(btnContainer);
+
+    // Secondary button: PLANETARY SECTORS
+    const campY = height * 0.69;
+    const campBg = new Graphics();
+    campBg.roundRect(cx - bw / 2, campY - bh / 2, bw, bh, 8);
+    campBg.fill({ color: 0x0f172a });
+    campBg.stroke({ color: 0x00d4ff, alpha: 0.5, width: 1.5 });
+
+    const campText = new Text({
+      text: "PLANETARY SECTORS",
+      style: new TextStyle({
+        fontFamily: "Outfit",
+        fontSize: 14,
+        fontWeight: "700",
+        fill: 0x00d4ff,
+        letterSpacing: 2,
+      }),
+    });
+    campText.anchor.set(0.5, 0.5);
+    campText.x = cx;
+    campText.y = campY;
+
+    const campContainer = new Container();
+    campContainer.addChild(campBg);
+    campContainer.addChild(campText);
+    campContainer.eventMode = "static";
+    campContainer.cursor = "pointer";
+
+    campContainer.on("pointerover", () => {
+      campBg.clear();
+      campBg.roundRect(cx - bw / 2, campY - bh / 2, bw, bh, 8);
+      campBg.fill({ color: 0x1e293b });
+      campBg.stroke({ color: 0x33ddff, alpha: 0.8, width: 2 });
+    });
+
+    campContainer.on("pointerout", () => {
+      campBg.clear();
+      campBg.roundRect(cx - bw / 2, campY - bh / 2, bw, bh, 8);
+      campBg.fill({ color: 0x0f172a });
+      campBg.stroke({ color: 0x00d4ff, alpha: 0.5, width: 1.5 });
+    });
+
+    campContainer.on("pointertap", () => {
+      eventBus.emit("AUDIO_CONTEXT_UNLOCKED", {});
+      audioManager.unlock();
+      audioManager.playUIClick();
+      void this.gameApp.transitionTo("campaign");
+    });
+
+    this.container.addChild(campContainer);
 
     // Version tag
     const versionStyle = new TextStyle({

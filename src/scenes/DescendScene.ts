@@ -43,7 +43,9 @@ export class DescendScene {
 
   // Active module type (eventually set by drop selection; defaults to titanium_foundation for tutorial)
   private readonly activeModule: ModuleType = "titanium_foundation";
-  private readonly activePlanetId = "luna_prime";
+  private get activePlanetId(): string {
+    return this.gameApp.selectedPlanetId || "luna_prime";
+  }
 
   constructor(gameApp: GameApp) {
     this.gameApp = gameApp;

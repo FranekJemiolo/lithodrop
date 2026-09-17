@@ -7,7 +7,8 @@
 
 import type { ModuleType } from "../grid/types";
 
-export type GamePhase = "title" | "tutorial" | "descend" | "build" | "gameover" | "victory";
+export type GamePhase =
+  "title" | "tutorial" | "campaign" | "descend" | "build" | "gameover" | "victory";
 
 export interface TouchdownPayload {
   /** Impact velocity in m/s (downward) */
@@ -93,6 +94,13 @@ export interface HazardSpawnedPayload {
   affectedArea: { x: number; y: number; radius: number };
 }
 
+export interface ContractCompletedPayload {
+  contractId: string;
+  title: string;
+  rewardCredits: number;
+  rewardData: number;
+}
+
 /** Exhaustive map of all game events → their payload types */
 export interface GameEventMap {
   PAYLOAD_TOUCHDOWN: TouchdownPayload;
@@ -111,4 +119,6 @@ export interface GameEventMap {
   OVERCLOCK_ACTIVATED: OverclockActivatedPayload;
   HAZARD_SPAWNED: HazardSpawnedPayload;
   AUDIO_CONTEXT_UNLOCKED: Record<string, never>;
+  CONTRACT_COMPLETED: ContractCompletedPayload;
+  PLANET_UNLOCKED: { planetId: string };
 }

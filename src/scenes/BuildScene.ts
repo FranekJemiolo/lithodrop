@@ -74,7 +74,7 @@ export class BuildScene {
     this.container.addChild(this.modulesContainer);
 
     // Build system
-    const planet = getPlanetById("luna_prime");
+    const planet = getPlanetById(this.gameApp.selectedPlanetId || "luna_prime");
     this.buildSystem = new BuildPhaseSystem(planet);
 
     // HUD elements
