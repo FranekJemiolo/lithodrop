@@ -1,0 +1,2 @@
+import{a as e,n as t,t as n}from"./pixi-ISLmv9Gg.js";var r=class{container;gameApp;constructor(t){this.gameApp=t,this.container=new e}start(){let{width:e,height:r}=this.gameApp.app.screen,i=new n({text:`DROPMASTER CERTIFICATION VR
+[Tutorial — Coming in M4]`,style:new t({fontFamily:`Outfit`,fontSize:24,fontWeight:`600`,fill:54527,align:`center`})});i.anchor.set(.5,.5),i.x=e/2,i.y=r/2,this.container.addChild(i),setTimeout(()=>{this.gameApp.transitionTo(`descend`)},2e3)}};export{r as TutorialScene};

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#070B14" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="LithoDrop" />
+    <meta
+      name="description"
+      content="LithoDrop: Orbital Syndicate — Pilot delivery landers through treacherous atmospheres and build off-world colonies on alien planets."
+    />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="LithoDrop: Orbital Syndicate" />
+    <meta property="og:description" content="A 2D physics-based space colony builder. Land modules. Build bases. Survive." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://franekjemiolo.github.io/lithodrop/" />
+
+    <!-- Apple touch icons (generated assets) -->
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+
+    <!-- Google Fonts: Outfit for premium industrial-sci-fi typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap"
+    />
+
+    <title>LithoDrop: Orbital Syndicate</title>
+    <script type="module" crossorigin src="./assets/index-CiDGy1vE.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/rolldown-runtime-hePW80VL.js">
+    <link rel="modulepreload" crossorigin href="./assets/react-8XkNPiMk.js">
+    <link rel="modulepreload" crossorigin href="./assets/pixi-ISLmv9Gg.js">
+    <link rel="stylesheet" crossorigin href="./assets/index-C98HqJv0.css">
+  <link rel="manifest" href="./manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
+  <body>
+    <!-- PixiJS canvas is injected here by GameApp.ts and sits behind the React HUD -->
+    <div id="game-canvas-container"></div>
+
+    <!-- React HUD overlay: mounted on top of the WebGL canvas -->
+    <div id="hud-root"></div>
+
+  </body>
+</html>
