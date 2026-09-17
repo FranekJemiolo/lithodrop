@@ -33,7 +33,25 @@ export const ADJACENCY_RULES: AdjacencyBonus[] = [
     resource: "water",
   },
 
-  // Hydroponics Dome benefits from adjacent Crew Habitat (labor) → Science Labs produce more data
+  // Hydroponics Dome placed next to Crew Habitat (labor workforce) → +25% food output
+  {
+    sourceType: "hydroponics_dome",
+    neighborType: "crew_habitat",
+    description: "Colony Workforce: +25% hydroponics food output",
+    multiplier: 1.25,
+    resource: "food",
+  },
+
+  // Crew Habitat benefits from adjacent Hydroponics Dome (fresh produce & morale)
+  {
+    sourceType: "crew_habitat",
+    neighborType: "hydroponics_dome",
+    description: "Fresh Hydroponics Rations: +25% habitability efficiency",
+    multiplier: 1.25,
+    resource: "food",
+  },
+
+  // Science Lab benefits from adjacent Crew Habitat (resident researchers)
   {
     sourceType: "science_lab",
     neighborType: "crew_habitat",

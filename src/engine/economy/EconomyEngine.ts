@@ -92,9 +92,10 @@ export class EconomyEngine {
   private processTick(graph: DependencyGraph, grid: GridState): void {
     const flow = graph.rebuild(grid);
 
-    // Income: minerals + data produce credits
-    // Rate: 1 mineral/s = 1.0 cr/s, 1 data/s = 3.0 cr/s (data is more valuable)
-    const grossIncome = flow.mineralsPerSecond * 1.0 + flow.dataPerSecond * 3.0;
+    // Income: minerals + data + food produce credits
+    // Rate: 1 mineral/s = 1.0 cr/s, 1 data/s = 3.0 cr/s, 1 food/s = 1.5 cr/s
+    const grossIncome =
+      flow.mineralsPerSecond * 1.0 + flow.dataPerSecond * 3.0 + flow.foodPerSecond * 1.5;
 
     const taxRate = this.taxScheduler.currentTaxRate;
     const net = grossIncome - taxRate;

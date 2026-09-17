@@ -95,6 +95,7 @@ export class BuildPhaseSystem {
   /** Called from PixiJS ticker each frame */
   update(ticker: Ticker): void {
     this.economy.tick(ticker.deltaMS, this.graph, this.grid);
+    this.droneQueue.update(ticker.deltaMS, this.grid);
   }
 
   /**

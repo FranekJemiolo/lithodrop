@@ -80,6 +80,7 @@ export class BuildScene {
     // HUD elements
     this.buildCorporateTicker(width);
     this.buildPhaseLabel(width);
+    this.buildDroneSquadronHUD(width);
     this.buildPayloadDock(width, height);
     this.buildNextDropButton(width, height);
 
@@ -97,8 +98,54 @@ export class BuildScene {
     console.log("LithoDrop: BuildScene started ✓");
   }
 
+  private droneHudText!: Text;
+
+  private buildDroneSquadronHUD(_width: number): void {
+    const panel = new Graphics();
+    panel.roundRect(16, 70, 220, 58, 6);
+    panel.fill({ color: 0x0c1524, alpha: 0.85 });
+    panel.stroke({ color: 0x1a2e4a, width: 1 });
+    this.container.addChild(panel);
+
+    const title = new Text({
+      text: "AUTOMATED DRONE FLEET",
+      style: new TextStyle({
+        fontFamily: "Outfit",
+        fontSize: 9,
+        fontWeight: "700",
+        fill: 0x00d4ff,
+        letterSpacing: 2,
+      }),
+    });
+    title.x = 24;
+    title.y = 76;
+    this.container.addChild(title);
+
+    this.droneHudText = new Text({
+      text: "RIGGERS: 1  |  WELDERS: 1  |  COURIERS: 1",
+      style: new TextStyle({
+        fontFamily: "JetBrains Mono",
+        fontSize: 10,
+        fill: 0x94a3b8,
+      }),
+    });
+    this.droneHudText.x = 24;
+    this.droneHudText.y = 96;
+    this.container.addChild(this.droneHudText);
+  }
+
+  private updateDroneHUD(): void {
+    if (!this.droneHudText || !this.buildSystem) return;
+    const drones = this.buildSystem.droneQueue.getAllDrones();
+    const busy = drones.filter((d) => d.isBusy).length;
+    const pending = this.buildSystem.droneQueue.pendingTasks;
+    this.droneHudText.text = `FLEET: ${drones.length}  |  BUSY: ${busy}  |  TASKS: ${pending}`;
+    this.droneHudText.style.fill = pending > 0 ? 0xffd700 : busy > 0 ? 0x00d4ff : 0x39ff6b;
+  }
+
   private readonly onTick = (): void => {
     this.buildSystem.update(this.gameApp.app.ticker);
+    this.updateDroneHUD();
   };
 
   /** Render the grid: background lines + all placed modules */
@@ -200,19 +247,30 @@ export class BuildScene {
     label.x = x + 6;
     label.y = y + CELL_PX / 2 - 6;
 
-    // Adjacency multiplier badge (if > 1.0)
+    // Adjacency multiplier badge and halo (if > 1.0)
     const multiplier = node?.adjacencyMultiplier ?? 1.0;
     if (multiplier > 1.01) {
+      // Golden synergy outline
+      g.roundRect(x + 2, y + 2, CELL_PX - 4, CELL_PX - 4, 6);
+      g.stroke({ color: 0xffd700, width: 2, alpha: 0.85 });
+
+      // Badge pill background
+      const badgePill = new Graphics();
+      badgePill.roundRect(x + CELL_PX - 32, y + 4, 28, 14, 3);
+      badgePill.fill(0x0a180a);
+      badgePill.stroke({ color: 0xffd700, width: 1 });
+      this.modulesContainer.addChild(badgePill);
+
       const badge = new Text({
         text: `×${multiplier.toFixed(1)}`,
         style: new TextStyle({
           fontFamily: "Outfit",
           fontSize: 9,
-          fontWeight: "700",
+          fontWeight: "800",
           fill: 0xffd700,
         }),
       });
-      badge.x = x + CELL_PX - 28;
+      badge.x = x + CELL_PX - 29;
       badge.y = y + 5;
       this.modulesContainer.addChild(badge);
     }
@@ -245,9 +303,23 @@ export class BuildScene {
         const x2 = this.gridOffsetX + neighbor.qx * CELL_PX + CELL_PX / 2;
         const y2 = this.gridOffsetY + neighbor.qy * CELL_PX + CELL_PX / 2;
 
+        const hasSynergy =
+          (m.type === "hydroponics_dome" && neighbor.type === "crew_habitat") ||
+          (m.type === "crew_habitat" && neighbor.type === "hydroponics_dome") ||
+          (m.type === "deep_core_drill" && neighbor.type === "science_lab") ||
+          (m.type === "science_lab" && neighbor.type === "deep_core_drill") ||
+          (m.type === "science_lab" && neighbor.type === "crew_habitat") ||
+          (m.type === "fission_reactor" && neighbor.type === "battery_bank");
+
         g.moveTo(x1, y1);
         g.lineTo(x2, y2);
-        g.stroke({ color: 0x00d4ff, width: 1.5, alpha: 0.25 });
+        if (hasSynergy) {
+          // Radiant golden synergy conduit
+          g.stroke({ color: 0xffd700, width: 2.5, alpha: 0.85 });
+        } else {
+          // Standard cyan power conduit
+          g.stroke({ color: 0x00d4ff, width: 1.5, alpha: 0.25 });
+        }
       }
     }
   }

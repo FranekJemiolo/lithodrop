@@ -1,0 +1,156 @@
+/**
+ * DroneEcosystem & Adjacency Audit unit tests (Phase 2 Mandate).
+ *
+ * Verifies:
+ *   1. All 3 drone classes (Riggers, Welders, Couriers) route correctly via severity:
+ *      - Couriers (severity ≥ 8 or emergency): critical response
+ *      - Welders (4 ≤ severity < 8): structural repair
+ *      - Riggers (severity < 4 or drag): dragging & surface maintenance
+ *   2. Priority queue dispatches highest severity emergency tasks first
+ *   3. Drones execute tasks, restore module health, and return to fleet
+ *   4. Hydroponics Dome + Crew Habitat adjacency bonus (+25%) applies to food yield
+ */
+
+import { describe, it, expect, beforeEach } from "vitest";
+import {
+  DroneDispatchQueue,
+  classForSeverity,
+} from "../../../src/engine/events/DroneDispatchQueue";
+import { GridState } from "../../../src/engine/grid/GridState";
+import { DependencyGraph } from "../../../src/engine/grid/DependencyGraph";
+import { EconomyEngine } from "../../../src/engine/economy/EconomyEngine";
+
+describe("Phase 2: Drone Ecosystem & Hazard Severity Routing", () => {
+  it("correctly routes drone classes according to hazard severity and task type", () => {
+    // Couriers for emergencies (severity >= 8 or meteor or explicit emergency)
+    expect(classForSeverity(10)).toBe("courier");
+    expect(classForSeverity(8)).toBe("courier");
+    expect(classForSeverity(5, "meteor")).toBe("courier");
+    expect(classForSeverity(2, "impact", "emergency")).toBe("courier");
+
+    // Welders for repair (severity 4–7)
+    expect(classForSeverity(7)).toBe("welder");
+    expect(classForSeverity(6)).toBe("welder");
+    expect(classForSeverity(4)).toBe("welder");
+    expect(classForSeverity(2, "structural", "repair")).toBe("welder");
+
+    // Riggers for dragging and routine maintenance (severity < 4)
+    expect(classForSeverity(3)).toBe("rigger");
+    expect(classForSeverity(1)).toBe("rigger");
+    expect(classForSeverity(0)).toBe("rigger");
+    expect(classForSeverity(7, "structural", "drag")).toBe("rigger");
+  });
+
+  it("prioritizes emergency tasks over routine damage in the queue", () => {
+    const queue = new DroneDispatchQueue(0); // 0 drones initially so all tasks stay queued
+
+    queue.enqueueDamage({
+      instanceId: "mod_low",
+      moduleType: "titanium_foundation",
+      damage: 10,
+      health: 90,
+      severity: 2,
+      source: "heat",
+    });
+
+    queue.enqueueDamage({
+      instanceId: "mod_emergency",
+      moduleType: "fission_reactor",
+      damage: 50,
+      health: 20,
+      severity: 9,
+      source: "meteor",
+    });
+
+    queue.enqueueDamage({
+      instanceId: "mod_mid",
+      moduleType: "crew_habitat",
+      damage: 30,
+      health: 60,
+      severity: 5,
+      source: "impact",
+    });
+
+    expect(queue.pendingTasks).toBe(3);
+
+    // Now add a drone and verify the highest severity emergency task is popped first
+    queue.addDrone();
+    queue.tryDispatch();
+
+    const busyDrone = queue.getBusyDrones()[0];
+    expect(busyDrone).toBeDefined();
+    expect(busyDrone.currentTargetId).toBe("mod_emergency");
+    expect(busyDrone.droneClass).toBe("courier");
+  });
+
+  it("busy drones restore module health and return to fleet upon completion", () => {
+    const queue = new DroneDispatchQueue(1);
+    const grid = new GridState();
+    const mod = grid.placeModule({ qx: 0, qy: 0 }, "titanium_foundation");
+    grid.updateModuleHealth(mod.instanceId, 50);
+
+    // Dispatch a welder
+    queue.dispatchWelder(mod.instanceId, 6);
+
+    const drones = queue.getAllDrones();
+    expect(drones[0].isBusy).toBe(true);
+    expect(drones[0].droneClass).toBe("welder");
+
+    // Advance simulation by 3500ms (welder takes 3000ms)
+    queue.update(3500, grid);
+
+    // Health should be restored by +20
+    const healedMod = grid.getModuleById(mod.instanceId);
+    expect(healedMod?.health).toBe(70);
+
+    // Drone should now be free
+    expect(drones[0].isBusy).toBe(false);
+  });
+});
+
+describe("Phase 2: Adjacency Bonuses & Economy Math", () => {
+  let grid: GridState;
+  let graph: DependencyGraph;
+
+  beforeEach(() => {
+    grid = new GridState();
+    graph = new DependencyGraph();
+  });
+
+  it("applies +25% multiplier when Hydroponics Dome is adjacent to Crew Habitat", () => {
+    // Place power source so modules are powered
+    grid.placeModule({ qx: 0, qy: 0 }, "fission_reactor");
+    grid.placeModule({ qx: 1, qy: 0 }, "hydroponics_dome");
+    grid.placeModule({ qx: 2, qy: 0 }, "crew_habitat");
+
+    const flow = graph.rebuild(grid);
+
+    const hydro = grid.getModule({ qx: 1, qy: 0 })!;
+    const node = graph.getNode(hydro.instanceId);
+
+    // Base yield is 8 food/s. With +25% adjacency multiplier, effective yield is 10 food/s
+    expect(node?.adjacencyMultiplier).toBeCloseTo(1.25, 2);
+    expect(node?.effectiveYieldRate).toBeCloseTo(10.0, 1);
+    expect(flow.foodPerSecond).toBeCloseTo(10.0, 1);
+  });
+
+  it("food generated by Hydroponics contributes to economy gross income", () => {
+    grid.placeModule({ qx: 0, qy: 0 }, "fission_reactor");
+    grid.placeModule({ qx: 1, qy: 0 }, "hydroponics_dome");
+    grid.placeModule({ qx: 2, qy: 0 }, "crew_habitat");
+
+    const economy = new EconomyEngine({
+      initialCredits: 1000,
+      quotaCreditsPerSecond: 100,
+      quotaSustainMs: 60000,
+      initialTaxTier: 0, // 2 cr/s tax
+    });
+
+    // Advance 1000ms
+    economy.tick(1000, graph, grid);
+
+    // Initial 1000 - 2 tax + 10 food * 1.5 = 1013 credits
+    expect(economy.currentCredits).toBeGreaterThan(1000);
+    expect(economy.currentCredits).toBeCloseTo(1013, 0);
+  });
+});

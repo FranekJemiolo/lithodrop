@@ -75,6 +75,11 @@ export class GridState {
     this.cells.set(key, { ...existing, ...updates, instanceId, qx: coord.qx, qy: coord.qy });
   }
 
+  /** Update a module's health clamped to [0, 100]. */
+  updateModuleHealth(instanceId: string, health: number): void {
+    this.updateModule(instanceId, { health: Math.max(0, Math.min(100, health)) });
+  }
+
   /** Get all placed module instances. */
   getAllModules(): ModuleInstance[] {
     return Array.from(this.cells.values());

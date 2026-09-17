@@ -16,12 +16,19 @@ import { eventBus } from "./EventBus";
 import { PriorityQueue } from "./PriorityQueue";
 import type { HullDegradationPayload } from "./EventTypes";
 
+/**
+ * Drone classes:
+ *   - Courier (severity ≥ 8 or emergency): emergency triage, high-speed hazard stabilization
+ *   - Welder  (4 ≤ severity < 8): structural and impact damage repair
+ *   - Rigger   (severity < 4 or dragging): dragging unanchored payloads, debris removal
+ */
 export type DroneClass = "rigger" | "welder" | "courier";
 
 export interface DispatchTask {
   instanceId: string;
   severity: number;
   source: HullDegradationPayload["source"];
+  taskType?: "emergency" | "repair" | "drag";
   queuedAt: number; // Date.now()
 }
 
@@ -31,13 +38,35 @@ export interface DroneState {
   isBusy: boolean;
   currentTargetId: string | null;
   dispatchedAt: number | null;
+  taskDurationMs: number;
+  elapsedMs: number;
 }
 
-function classForSeverity(severity: number): DroneClass {
-  if (severity >= 6) return "welder";
-  if (severity >= 4) return "rigger";
-  return "courier";
+/**
+ * Route drone class based on hazard severity and source:
+ * - Couriers (severity ≥ 8): critical emergency triage & rapid containment
+ * - Welders (severity 4–7): hull fracture welding & structural repair
+ * - Riggers (severity < 4): module dragging, alignment & surface debris clearing
+ */
+export function classForSeverity(
+  severity: number,
+  source?: HullDegradationPayload["source"],
+  taskType?: "emergency" | "repair" | "drag",
+): DroneClass {
+  if (taskType === "emergency") return "courier";
+  if (taskType === "repair") return "welder";
+  if (taskType === "drag") return "rigger";
+
+  if (severity >= 8 || source === "meteor") return "courier";
+  if (severity >= 4) return "welder";
+  return "rigger";
 }
+
+const DRONE_DURATIONS: Record<DroneClass, number> = {
+  courier: 1500, // rapid emergency response
+  welder: 3000, // careful structural welding
+  rigger: 2500, // mechanical dragging / clearing
+};
 
 export class DroneDispatchQueue {
   private readonly queue: PriorityQueue<DispatchTask>;
@@ -70,6 +99,8 @@ export class DroneDispatchQueue {
       isBusy: false,
       currentTargetId: null,
       dispatchedAt: null,
+      taskDurationMs: 0,
+      elapsedMs: 0,
     });
     return droneId;
   }
@@ -80,6 +111,45 @@ export class DroneDispatchQueue {
       instanceId: payload.instanceId,
       severity: payload.severity,
       source: payload.source,
+      queuedAt: Date.now(),
+    };
+    this.queue.push(task);
+    this.tryDispatch();
+  }
+
+  /** Manually dispatch a Rigger drone to drag an unanchored module or clear debris */
+  dispatchRiggerToDrag(instanceId: string): void {
+    const task: DispatchTask = {
+      instanceId,
+      severity: 3,
+      source: "structural",
+      taskType: "drag",
+      queuedAt: Date.now(),
+    };
+    this.queue.push(task);
+    this.tryDispatch();
+  }
+
+  /** Manually dispatch a Welder drone for structural repair */
+  dispatchWelder(instanceId: string, severity = 6): void {
+    const task: DispatchTask = {
+      instanceId,
+      severity,
+      source: "impact",
+      taskType: "repair",
+      queuedAt: Date.now(),
+    };
+    this.queue.push(task);
+    this.tryDispatch();
+  }
+
+  /** Manually dispatch an emergency Courier drone for critical hazard response */
+  dispatchCourierEmergency(instanceId: string, severity = 9): void {
+    const task: DispatchTask = {
+      instanceId,
+      severity,
+      source: "meteor",
+      taskType: "emergency",
       queuedAt: Date.now(),
     };
     this.queue.push(task);
@@ -97,19 +167,49 @@ export class DroneDispatchQueue {
     if (!availableDrone) return;
 
     const task = this.queue.pop()!;
-    const droneClass = classForSeverity(task.severity);
+    const droneClass = classForSeverity(task.severity, task.source, task.taskType);
 
     // Update drone state
     availableDrone.isBusy = true;
     availableDrone.droneClass = droneClass;
     availableDrone.currentTargetId = task.instanceId;
     availableDrone.dispatchedAt = Date.now();
+    availableDrone.taskDurationMs = DRONE_DURATIONS[droneClass];
+    availableDrone.elapsedMs = 0;
 
     eventBus.emit("DRONE_DISPATCHED", {
       droneId: availableDrone.droneId,
       droneClass,
       targetInstanceId: task.instanceId,
     });
+  }
+
+  /** Advance simulation for busy drones. Restores module health upon completion. */
+  update(
+    deltaMs: number,
+    grid?: {
+      getModuleById?: (id: string) => { health: number } | null | undefined;
+      updateModuleHealth?: (id: string, hp: number) => void;
+    },
+  ): void {
+    for (const drone of this.drones.values()) {
+      if (!drone.isBusy) continue;
+
+      drone.elapsedMs += deltaMs;
+      if (drone.elapsedMs >= drone.taskDurationMs) {
+        // Resolve task effect
+        if (drone.currentTargetId && grid?.getModuleById && grid?.updateModuleHealth) {
+          const mod = grid.getModuleById(drone.currentTargetId);
+          if (mod) {
+            const healAmount =
+              drone.droneClass === "courier" ? 25 : drone.droneClass === "welder" ? 20 : 10;
+            grid.updateModuleHealth(drone.currentTargetId, Math.min(100, mod.health + healAmount));
+          }
+        }
+
+        this.droneReturned(drone.droneId);
+      }
+    }
   }
 
   /**
@@ -123,6 +223,8 @@ export class DroneDispatchQueue {
     drone.isBusy = false;
     drone.currentTargetId = null;
     drone.dispatchedAt = null;
+    drone.taskDurationMs = 0;
+    drone.elapsedMs = 0;
 
     // Immediately check for pending tasks
     this.tryDispatch();
