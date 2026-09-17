@@ -27,7 +27,6 @@ import {
 import { techTree } from "../progression/TechTree";
 import type { InputSystem } from "./InputSystem";
 import {
-  PHYSICS_DT_MS,
   PAYLOAD_PROFILES,
   THRUSTER_FORCE_N,
   RCS_TORQUE_NM,
@@ -35,6 +34,7 @@ import {
   calculateImpactDamage,
   calculateDropBounty,
   ATMOSPHERE_DENSITY,
+  pixelsToMeters,
 } from "../../constants/physics";
 import type { ModuleType } from "../grid/types";
 
@@ -65,6 +65,7 @@ export class DescendPhaseSystem {
   private landerState: LanderBodyState;
   private readonly planetId: string;
   private readonly hazardSystem?: HazardSystem;
+  private readonly surfaceY?: number;
   readonly telemetryTracker = new TelemetryTracker();
   private landed = false;
 
@@ -74,12 +75,14 @@ export class DescendPhaseSystem {
     landerState: LanderBodyState,
     planetId: string,
     hazardSystem?: HazardSystem,
+    surfaceY?: number,
   ) {
     this.physicsWorld = physicsWorld;
     this.input = input;
     this.landerState = landerState;
     this.planetId = planetId;
     this.hazardSystem = hazardSystem;
+    this.surfaceY = surfaceY;
 
     // Listen for Matter.js collision events
     Matter.Events.on(this.physicsWorld.engine, "collisionStart", this.onCollisionStart);
@@ -140,6 +143,11 @@ export class DescendPhaseSystem {
     if (downVel > this.landerState.maxDescentVelocity) {
       this.landerState = { ...this.landerState, maxDescentVelocity: downVel };
     }
+
+    // Anti-tunneling boundary safeguard: if high downward velocity penetrates surface level
+    if (this.surfaceY !== undefined && this.landerState.body.position.y >= this.surfaceY + 25) {
+      this.handleTouchdown();
+    }
   }
 
   /** Get current lander state (for HUD rendering) */
@@ -170,20 +178,38 @@ export class DescendPhaseSystem {
   };
 
   private handleTouchdown(): void {
+    if (this.landed) return;
     this.landed = true;
+
+    // Read impact velocity BEFORE zeroing out velocity
+    const impactVelocity = Math.max(0, getDownwardVelocity(this.landerState.body));
+
+    // Convert from pixel velocity to m/s
+    const impactMs = pixelsToMeters(impactVelocity);
+
+    // Immediately zero out velocity upon surface contact to prevent sinking
+    Matter.Body.setVelocity(this.landerState.body, { x: 0, y: 0 });
+    Matter.Body.setAngularVelocity(this.landerState.body, 0);
+
+    // If penetrating beyond surface, clamp position to prevent sinking
+    if (this.surfaceY !== undefined && this.landerState.body.position.y > this.surfaceY + 10) {
+      Matter.Body.setPosition(this.landerState.body, {
+        x: this.landerState.body.position.x,
+        y: this.surfaceY + 10,
+      });
+    }
 
     const profile = PAYLOAD_PROFILES[this.landerState.moduleType];
     const mods = techTree.getModifiers();
     const baseTolerance = profile?.impactTolerance ?? 5;
     const effectiveTolerance = baseTolerance * mods.impactToleranceMultiplier;
 
-    const impactVelocity = Math.max(0, getDownwardVelocity(this.landerState.body));
-
-    // Convert from pixel velocity to m/s (rough approximation)
-    const impactMs = impactVelocity * (PHYSICS_DT_MS / 1000) * 2;
-
     const impactDamage = calculateImpactDamage(impactMs, effectiveTolerance);
     const survived = impactDamage < 100;
+
+    if (!survived) {
+      this.landerState = { ...this.landerState, isAlive: false, hullHealth: 0 };
+    }
 
     const bounty = survived
       ? calculateDropBounty({

@@ -44,6 +44,8 @@ export class DescendScene {
   private hazardSystem!: HazardSystem;
   private hazardRenderer!: HazardRenderer;
   private surfaceY = 0;
+  private touchdownTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private unsubTouchdown: (() => void) | null = null;
 
   private get activeModule(): ModuleType {
     return this.gameApp.selectedModuleType || "titanium_foundation";
@@ -113,6 +115,7 @@ export class DescendScene {
       landerState,
       this.activePlanetId,
       this.hazardSystem,
+      this.surfaceY,
     );
 
     // ── PixiJS Entities ──────────────────────────────────────────────────────
@@ -125,15 +128,16 @@ export class DescendScene {
     this.buildControlsLabel(width, height);
 
     // ── Subscribe to touchdown event ─────────────────────────────────────────
-    const unsubTouchdown = eventBus.on("PAYLOAD_TOUCHDOWN", (ev) => {
-      unsubTouchdown();
+    this.unsubTouchdown = eventBus.on("PAYLOAD_TOUCHDOWN", (ev) => {
+      this.unsubTouchdown?.();
+      this.unsubTouchdown = null;
       audioManager.stopThruster();
       if (ev.survived) {
         audioManager.playLandingSuccess();
       } else {
         audioManager.playImpact(ev.velocity, false);
       }
-      setTimeout(() => {
+      this.touchdownTimeoutId = setTimeout(() => {
         void this.gameApp.transitionTo(ev.survived ? "build" : "title");
       }, 1500);
     });
@@ -238,6 +242,14 @@ export class DescendScene {
   }
 
   destroy(): void {
+    if (this.touchdownTimeoutId) {
+      clearTimeout(this.touchdownTimeoutId);
+      this.touchdownTimeoutId = null;
+    }
+    if (this.unsubTouchdown) {
+      this.unsubTouchdown();
+      this.unsubTouchdown = null;
+    }
     audioManager.stopThruster();
     this.hazardRenderer?.destroy();
     this.gameApp.app.ticker.remove(this.onTick);

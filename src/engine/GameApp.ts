@@ -80,6 +80,8 @@ export class GameApp {
     this._selectedModuleType = type;
   }
 
+  private currentSceneInstance: { destroy(): void } | null = null;
+
   /** Current game phase — read-only from outside */
   get phase(): GamePhase {
     return this.currentPhase;
@@ -93,7 +95,17 @@ export class GameApp {
   async transitionTo(newPhase: GamePhase): Promise<void> {
     const previousPhase = this.currentPhase;
 
-    // Clear current scene
+    // Clean up previous scene resources (tickers, physics, event listeners)
+    if (this.currentSceneInstance) {
+      try {
+        this.currentSceneInstance.destroy();
+      } catch (err) {
+        console.warn("GameApp: Error destroying previous scene:", err);
+      }
+      this.currentSceneInstance = null;
+    }
+
+    // Clear current scene container
     this.sceneContainer.removeChildren();
 
     this.currentPhase = newPhase;
@@ -111,6 +123,7 @@ export class GameApp {
       case "title": {
         const { TitleScene } = await import("../scenes/TitleScene");
         const scene = new TitleScene(this);
+        this.currentSceneInstance = scene;
         this.sceneContainer.addChild(scene.container);
         scene.start();
         break;
@@ -118,6 +131,7 @@ export class GameApp {
       case "tutorial": {
         const { TutorialScene } = await import("../scenes/TutorialScene");
         const scene = new TutorialScene(this);
+        this.currentSceneInstance = scene;
         this.sceneContainer.addChild(scene.container);
         scene.start();
         break;
@@ -125,6 +139,7 @@ export class GameApp {
       case "campaign": {
         const { CampaignScene } = await import("../scenes/CampaignScene");
         const scene = new CampaignScene(this);
+        this.currentSceneInstance = scene;
         this.sceneContainer.addChild(scene.container);
         scene.start();
         break;
@@ -132,6 +147,7 @@ export class GameApp {
       case "descend": {
         const { DescendScene } = await import("../scenes/DescendScene");
         const scene = new DescendScene(this);
+        this.currentSceneInstance = scene;
         this.sceneContainer.addChild(scene.container);
         scene.start();
         break;
@@ -139,6 +155,7 @@ export class GameApp {
       case "build": {
         const { BuildScene } = await import("../scenes/BuildScene");
         const scene = new BuildScene(this);
+        this.currentSceneInstance = scene;
         this.sceneContainer.addChild(scene.container);
         scene.start();
         break;
@@ -159,6 +176,14 @@ export class GameApp {
 
   /** Clean up all resources (used in tests and app teardown) */
   destroy(): void {
+    if (this.currentSceneInstance) {
+      try {
+        this.currentSceneInstance.destroy();
+      } catch (err) {
+        console.warn("GameApp: Error destroying scene in app teardown:", err);
+      }
+      this.currentSceneInstance = null;
+    }
     this.resizeObserver?.disconnect();
     eventBus.clearAll();
     this.app.destroy(true, { children: true, texture: true });

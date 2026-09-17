@@ -91,6 +91,17 @@ export function createTerrainBodies(options: TerrainOptions): TerrainResult {
     bodies.push(segment);
   }
 
+  // Solid bedrock base plate: massive collision volume extending 2000px below surface
+  // to ensure extreme velocity drops never tunnel through the planetary crust
+  const bedrock = Matter.Bodies.rectangle(width / 2, surfaceY + 1000, width * 3, 2000, {
+    isStatic: true,
+    label: "terrain-bedrock",
+    friction: 0.9,
+    restitution: 0.01,
+    collisionFilter: { category: 0x0002, mask: 0x0001 },
+  });
+  bodies.push(bedrock);
+
   // Canyon walls (for Serpentine Rifts)
   if (hasCanyonWalls) {
     const wallHeight = 400;

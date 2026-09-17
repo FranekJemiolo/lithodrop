@@ -21,12 +21,14 @@ import type { ModuleType } from "../grid/types";
 import { calculateDropBounty } from "../../constants/physics";
 import { getModuleDef } from "../grid/ModuleRegistry";
 import type { PlanetDefinition } from "../../constants/planets";
+import { StructuralIntegrity } from "../grid/StructuralIntegrity";
 
 export class BuildPhaseSystem {
   readonly grid: GridState;
   readonly graph: DependencyGraph;
   readonly economy: EconomyEngine;
   readonly droneQueue: DroneDispatchQueue;
+  readonly planet: PlanetDefinition;
 
   private victoryEmitted = false;
 
@@ -34,6 +36,7 @@ export class BuildPhaseSystem {
   private readonly unsubAnchorAuth: () => void;
 
   constructor(planet: PlanetDefinition) {
+    this.planet = planet;
     this.grid = new GridState();
     this.graph = new DependencyGraph();
     this.economy = new EconomyEngine({
@@ -71,6 +74,9 @@ export class BuildPhaseSystem {
           qx: coord.qx,
           qy: coord.qy,
         });
+
+        // Enforce cantilever structural integrity
+        StructuralIntegrity.evaluateAndEnforce(this.grid, this.planet.gravityMs2);
       }
     });
 
@@ -109,6 +115,9 @@ export class BuildPhaseSystem {
       qx,
       qy,
     });
+
+    // Enforce cantilever structural integrity
+    StructuralIntegrity.evaluateAndEnforce(this.grid, this.planet.gravityMs2);
 
     return true;
   }
