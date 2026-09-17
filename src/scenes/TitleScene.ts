@@ -9,6 +9,7 @@
 import { Container, Graphics, Text, TextStyle } from "pixi.js";
 import type { GameApp } from "../engine/GameApp";
 import { eventBus } from "../engine/events/EventBus";
+import { audioManager } from "../engine/audio/AudioManager";
 
 export class TitleScene {
   readonly container: Container;
@@ -178,6 +179,8 @@ export class TitleScene {
     btnContainer.on("pointertap", () => {
       // Unlock Web Audio API (must happen on user gesture)
       eventBus.emit("AUDIO_CONTEXT_UNLOCKED", {});
+      audioManager.unlock();
+      audioManager.playUIClick();
       // Transition to tutorial
       void this.gameApp.transitionTo("tutorial");
     });

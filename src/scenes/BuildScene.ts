@@ -17,6 +17,7 @@ import { eventBus } from "../engine/events/EventBus";
 import { getPlanetById } from "../constants/planets";
 import { getModuleDef } from "../engine/grid/ModuleRegistry";
 import type { ModuleInstance } from "../engine/grid/types";
+import { audioManager } from "../engine/audio/AudioManager";
 
 // Grid cell size in pixels
 const CELL_PX = 72;
@@ -45,11 +46,14 @@ export class BuildScene {
 
     this.unsubModuleSnapped = eventBus.on("MODULE_SNAPPED", () => {
       this.renderGrid();
+      audioManager.playModuleSnap();
     });
   }
 
   start(): void {
     const { width, height } = this.gameApp.app.screen;
+
+    audioManager.startBuildAmbient();
 
     this.gridOffsetX = width / 2;
     this.gridOffsetY = height * 0.45;
@@ -389,6 +393,7 @@ export class BuildScene {
     btn.cursor = "pointer";
 
     btn.on("pointertap", () => {
+      audioManager.playUIClick();
       void this.gameApp.transitionTo("descend");
     });
 
@@ -408,6 +413,8 @@ export class BuildScene {
   }
 
   destroy(): void {
+    audioManager.stopBuildAmbient();
+    audioManager.stopAlarm();
     this.gameApp.app.ticker.remove(this.onTick);
     this.buildSystem?.destroy();
     this.unsubVictory();

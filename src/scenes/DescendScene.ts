@@ -26,6 +26,7 @@ import { eventBus } from "../engine/events/EventBus";
 import { getPlanetById } from "../constants/planets";
 import { PAYLOAD_PROFILES } from "../constants/physics";
 import type { ModuleType } from "../engine/grid/types";
+import { audioManager } from "../engine/audio/AudioManager";
 
 export class DescendScene {
   readonly container: Container;
@@ -113,6 +114,12 @@ export class DescendScene {
     // ── Subscribe to touchdown event ─────────────────────────────────────────
     const unsubTouchdown = eventBus.on("PAYLOAD_TOUCHDOWN", (ev) => {
       unsubTouchdown();
+      audioManager.stopThruster();
+      if (ev.survived) {
+        audioManager.playLandingSuccess();
+      } else {
+        audioManager.playImpact(ev.velocity, false);
+      }
       setTimeout(() => {
         void this.gameApp.transitionTo(ev.survived ? "build" : "title");
       }, 1500);
@@ -131,6 +138,16 @@ export class DescendScene {
 
     // Update physics
     this.descendSystem.update(ticker);
+
+    // Audio SFX updates
+    if (inputState.thrust > 0 && state.fuelKg > 0) {
+      audioManager.playThruster(inputState.thrust);
+    } else {
+      audioManager.stopThruster();
+    }
+    if (inputState.rotation !== 0) {
+      audioManager.playRCS();
+    }
 
     // Sync visuals with physics
     this.landerEntity.syncFromPhysics(state, inputState.thrust, ticker.deltaMS);
@@ -205,6 +222,7 @@ export class DescendScene {
   }
 
   destroy(): void {
+    audioManager.stopThruster();
     this.gameApp.app.ticker.remove(this.onTick);
     this.descendSystem?.destroy();
     this.physicsWorld?.destroy();
