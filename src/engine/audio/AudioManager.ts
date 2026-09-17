@@ -264,27 +264,59 @@ export class AudioManager {
     }
   }
 
-  // ─── Module Snap ──────────────────────────────────────────────────────────
+  // ─── Module Snap (Mechanical CLUNK + Digital CHIME) ─────────────────────
 
   playModuleSnap(): void {
     if (!this.ctx || !this.sfxBus) return;
     const ctx = this.ctx;
+    const now = ctx.currentTime;
 
-    // Two-tone "clunk" — metallic snap
-    const freqs = [440, 660];
-    freqs.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      osc.type = "triangle";
-      osc.frequency.value = freq;
+    // 1. Heavy Mechanical CLUNK (Deep bass punch + metallic transient)
+    const subOsc = ctx.createOscillator();
+    subOsc.type = "sine";
+    subOsc.frequency.setValueAtTime(120, now);
+    subOsc.frequency.exponentialRampToValueAtTime(38, now + 0.12);
 
-      const gain = ctx.createGain();
-      gain.gain.setValueAtTime(0.25 - i * 0.05, ctx.currentTime + i * 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15 + i * 0.02);
+    const subGain = ctx.createGain();
+    subGain.gain.setValueAtTime(0.5, now);
+    subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
 
-      osc.connect(gain);
-      gain.connect(this.sfxBus!);
-      osc.start(ctx.currentTime + i * 0.01);
-      osc.stop(ctx.currentTime + 0.2);
+    subOsc.connect(subGain);
+    subGain.connect(this.sfxBus);
+    subOsc.start(now);
+    subOsc.stop(now + 0.2);
+
+    // Metallic latch click (filtered noise transient)
+    const clickOsc = ctx.createOscillator();
+    clickOsc.type = "triangle";
+    clickOsc.frequency.setValueAtTime(480, now);
+    clickOsc.frequency.exponentialRampToValueAtTime(140, now + 0.08);
+
+    const clickGain = ctx.createGain();
+    clickGain.gain.setValueAtTime(0.35, now);
+    clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+
+    clickOsc.connect(clickGain);
+    clickGain.connect(this.sfxBus);
+    clickOsc.start(now);
+    clickOsc.stop(now + 0.12);
+
+    // 2. Euphoric Digital CHIME (Sparkling resonant chords in pentatonic scale)
+    const chimeFrequencies = [1046.5, 1318.5, 1567.98, 2093.0]; // C6, E6, G6, C7
+    chimeFrequencies.forEach((freq, idx) => {
+      const chimeOsc = ctx.createOscillator();
+      chimeOsc.type = "sine";
+      chimeOsc.frequency.value = freq;
+
+      const chimeGain = ctx.createGain();
+      const startTime = now + 0.02 + idx * 0.025;
+      chimeGain.gain.setValueAtTime(0.18 - idx * 0.03, startTime);
+      chimeGain.gain.exponentialRampToValueAtTime(0.0005, startTime + 0.35);
+
+      chimeOsc.connect(chimeGain);
+      chimeGain.connect(this.sfxBus!);
+      chimeOsc.start(startTime);
+      chimeOsc.stop(startTime + 0.4);
     });
   }
 

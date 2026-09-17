@@ -29,8 +29,24 @@ export class BuildScene {
   private buildSystem!: BuildPhaseSystem;
   private gridGraphics!: Graphics;
   private modulesContainer!: Container;
+  private electricalArcGraphics!: Graphics;
   private gridOffsetX = 0;
   private gridOffsetY = 0;
+
+  private activeSnapArcs: Array<{
+    qx: number;
+    qy: number;
+    elapsedMs: number;
+    durationMs: number;
+    sparks: Array<{
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      alpha: number;
+      color: number;
+    }>;
+  }> = [];
 
   private readonly unsubVictory: () => void;
   private readonly unsubModuleSnapped: () => void;
@@ -44,9 +60,10 @@ export class BuildScene {
       void this.gameApp.transitionTo("victory");
     });
 
-    this.unsubModuleSnapped = eventBus.on("MODULE_SNAPPED", () => {
+    this.unsubModuleSnapped = eventBus.on("MODULE_SNAPPED", (ev) => {
       this.renderGrid();
       audioManager.playModuleSnap();
+      this.triggerMagneticSnapArc(ev.qx, ev.qy);
     });
   }
 
@@ -67,11 +84,13 @@ export class BuildScene {
     // Planet atmosphere gradient strip at top
     this.drawAtmosphereStrip(width);
 
-    // Grid graphics (background lines + module sprites)
+    // Grid graphics (background lines + module sprites + electric snap arcs)
     this.gridGraphics = new Graphics();
     this.modulesContainer = new Container();
+    this.electricalArcGraphics = new Graphics();
     this.container.addChild(this.gridGraphics);
     this.container.addChild(this.modulesContainer);
+    this.container.addChild(this.electricalArcGraphics);
 
     // Build system
     const planet = getPlanetById(this.gameApp.selectedPlanetId || "luna_prime");
@@ -144,9 +163,131 @@ export class BuildScene {
   }
 
   private readonly onTick = (): void => {
+    const deltaMS = this.gameApp.app.ticker.deltaMS;
     this.buildSystem.update(this.gameApp.app.ticker);
     this.updateDroneHUD();
+    this.updateSnapArcs(deltaMS);
   };
+
+  /** Trigger bright electrical arc particle effect when module snaps into grid */
+  private triggerMagneticSnapArc(qx: number, qy: number): void {
+    const cellX = this.gridOffsetX + qx * CELL_PX;
+    const cellY = this.gridOffsetY + qy * CELL_PX;
+    const sparks: Array<{
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      alpha: number;
+      color: number;
+    }> = [];
+
+    // Spawn burst sparks around perimeter
+    for (let i = 0; i < 24; i++) {
+      const edge = i % 4;
+      let sx = cellX;
+      let sy = cellY;
+      if (edge === 0) {
+        sx += Math.random() * CELL_PX;
+      } else if (edge === 1) {
+        sx += CELL_PX;
+        sy += Math.random() * CELL_PX;
+      } else if (edge === 2) {
+        sx += Math.random() * CELL_PX;
+        sy += CELL_PX;
+      } else {
+        sy += Math.random() * CELL_PX;
+      }
+
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 40 + Math.random() * 90;
+      sparks.push({
+        x: sx,
+        y: sy,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        alpha: 1.0,
+        color: Math.random() > 0.35 ? 0x00d4ff : 0xffffff,
+      });
+    }
+
+    this.activeSnapArcs.push({
+      qx,
+      qy,
+      elapsedMs: 0,
+      durationMs: 280,
+      sparks,
+    });
+  }
+
+  private updateSnapArcs(deltaMS: number): void {
+    const g = this.electricalArcGraphics;
+    g.clear();
+    if (this.activeSnapArcs.length === 0) return;
+
+    const dt = deltaMS / 1000;
+    for (let i = this.activeSnapArcs.length - 1; i >= 0; i--) {
+      const arc = this.activeSnapArcs[i];
+      arc.elapsedMs += deltaMS;
+      if (arc.elapsedMs >= arc.durationMs) {
+        this.activeSnapArcs.splice(i, 1);
+        continue;
+      }
+
+      const progress = arc.elapsedMs / arc.durationMs;
+      const alpha = 1.0 - progress;
+      const cellX = this.gridOffsetX + arc.qx * CELL_PX;
+      const cellY = this.gridOffsetY + arc.qy * CELL_PX;
+
+      // Draw jagged electrical arc around cell perimeter
+      const corners = [
+        { x: cellX, y: cellY },
+        { x: cellX + CELL_PX, y: cellY },
+        { x: cellX + CELL_PX, y: cellY + CELL_PX },
+        { x: cellX, y: cellY + CELL_PX },
+        { x: cellX, y: cellY },
+      ];
+
+      for (let c = 0; c < 4; c++) {
+        const p1 = corners[c];
+        const p2 = corners[c + 1];
+        const segs = 4;
+        let lastX = p1.x;
+        let lastY = p1.y;
+
+        for (let s = 1; s <= segs; s++) {
+          const t = s / segs;
+          const targetX = p1.x + (p2.x - p1.x) * t;
+          const targetY = p1.y + (p2.y - p1.y) * t;
+          const jitterX = s === segs ? 0 : (Math.random() - 0.5) * 8;
+          const jitterY = s === segs ? 0 : (Math.random() - 0.5) * 8;
+          const midX = targetX + jitterX;
+          const midY = targetY + jitterY;
+
+          g.moveTo(lastX, lastY);
+          g.lineTo(midX, midY);
+          g.stroke({ color: 0x00d4ff, width: 2.5, alpha: alpha * 0.9 });
+
+          // Hot white center line
+          g.moveTo(lastX, lastY);
+          g.lineTo(midX, midY);
+          g.stroke({ color: 0xffffff, width: 1.2, alpha });
+
+          lastX = midX;
+          lastY = midY;
+        }
+      }
+
+      // Update & render sparks
+      for (const sp of arc.sparks) {
+        sp.x += sp.vx * dt;
+        sp.y += sp.vy * dt;
+        sp.alpha *= 0.92;
+        g.circle(sp.x, sp.y, 2);
+        g.fill({ color: sp.color, alpha: sp.alpha * alpha });
+      }
+    }
+  }
 
   /** Render the grid: background lines + all placed modules */
   private renderGrid(): void {
