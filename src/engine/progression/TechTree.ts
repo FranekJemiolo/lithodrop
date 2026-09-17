@@ -234,3 +234,5 @@ export interface TechModifiers {
   reactorMultiplier: number;
   anchorPowerMultiplier: number;
 }
+
+export const techTree = new TechTree();

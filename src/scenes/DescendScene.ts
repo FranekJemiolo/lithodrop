@@ -41,8 +41,9 @@ export class DescendScene {
   private terrainGraphics!: Graphics;
   private surfaceY = 0;
 
-  // Active module type (eventually set by drop selection; defaults to titanium_foundation for tutorial)
-  private readonly activeModule: ModuleType = "titanium_foundation";
+  private get activeModule(): ModuleType {
+    return this.gameApp.selectedModuleType || "titanium_foundation";
+  }
   private get activePlanetId(): string {
     return this.gameApp.selectedPlanetId || "luna_prime";
   }

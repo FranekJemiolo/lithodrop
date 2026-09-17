@@ -15,6 +15,7 @@
 import { Application, Container } from "pixi.js";
 import { eventBus } from "./events/EventBus";
 import type { GamePhase } from "./events/EventTypes";
+import type { ModuleType } from "./grid/types";
 
 export class GameApp {
   readonly app: Application;
@@ -61,6 +62,7 @@ export class GameApp {
   }
 
   private _selectedPlanetId = "luna_prime";
+  private _selectedModuleType: ModuleType = "titanium_foundation";
 
   get selectedPlanetId(): string {
     return this._selectedPlanetId;
@@ -68,6 +70,14 @@ export class GameApp {
 
   set selectedPlanetId(id: string) {
     this._selectedPlanetId = id;
+  }
+
+  get selectedModuleType(): ModuleType {
+    return this._selectedModuleType;
+  }
+
+  set selectedModuleType(type: ModuleType) {
+    this._selectedModuleType = type;
   }
 
   /** Current game phase — read-only from outside */

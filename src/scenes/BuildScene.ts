@@ -16,7 +16,7 @@ import { BuildPhaseSystem } from "../engine/systems/BuildPhaseSystem";
 import { eventBus } from "../engine/events/EventBus";
 import { getPlanetById } from "../constants/planets";
 import { getModuleDef } from "../engine/grid/ModuleRegistry";
-import type { ModuleInstance } from "../engine/grid/types";
+import type { ModuleInstance, ModuleType } from "../engine/grid/types";
 import { audioManager } from "../engine/audio/AudioManager";
 
 // Grid cell size in pixels
@@ -80,6 +80,7 @@ export class BuildScene {
     // HUD elements
     this.buildCorporateTicker(width);
     this.buildPhaseLabel(width);
+    this.buildPayloadDock(width, height);
     this.buildNextDropButton(width, height);
 
     // Initial grid render
@@ -362,6 +363,87 @@ export class BuildScene {
     this.container.addChild(hint);
   }
 
+  private payloadDockContainer: Container | null = null;
+
+  private buildPayloadDock(width: number, height: number): void {
+    if (this.payloadDockContainer) {
+      this.container.removeChild(this.payloadDockContainer);
+      this.payloadDockContainer.destroy({ children: true });
+    }
+
+    const dock = new Container();
+    this.payloadDockContainer = dock;
+
+    const modules: Array<{ type: ModuleType; label: string }> = [
+      { type: "titanium_foundation", label: "Foundation" },
+      { type: "solar_array", label: "Solar Array" },
+      { type: "crew_habitat", label: "Crew Hab" },
+      { type: "fission_reactor", label: "Reactor" },
+      { type: "hydroponics_dome", label: "Hydroponics" },
+      { type: "deep_core_drill", label: "Mining Drill" },
+      { type: "science_lab", label: "Science Lab" },
+    ];
+
+    const chipW = Math.min(95, (width - 40) / modules.length);
+    const chipH = 28;
+    const totalW = modules.length * chipW + (modules.length - 1) * 6;
+    const startX = width / 2 - totalW / 2;
+    const dockY = height - 120;
+
+    const header = new Text({
+      text: "NEXT PAYLOAD:",
+      style: new TextStyle({
+        fontFamily: "JetBrains Mono",
+        fontSize: 10,
+        fill: 0x8b9ab5,
+        letterSpacing: 1,
+      }),
+    });
+    header.x = startX;
+    header.y = dockY - 18;
+    dock.addChild(header);
+
+    modules.forEach((mod, idx) => {
+      const mx = startX + idx * (chipW + 6);
+      const isSelected = (this.gameApp.selectedModuleType || "titanium_foundation") === mod.type;
+
+      const chip = new Container();
+      chip.eventMode = "static";
+      chip.cursor = "pointer";
+
+      const bg = new Graphics();
+      bg.roundRect(mx, dockY, chipW, chipH, 5);
+      bg.fill({ color: isSelected ? 0x00d4ff : 0x0f172a });
+      bg.stroke({ color: isSelected ? 0x00d4ff : 0x334155, width: 1 });
+
+      const text = new Text({
+        text: mod.label,
+        style: new TextStyle({
+          fontFamily: "Outfit",
+          fontSize: 10,
+          fontWeight: isSelected ? "700" : "500",
+          fill: isSelected ? 0x070b14 : 0x94a3b8,
+        }),
+      });
+      text.anchor.set(0.5, 0.5);
+      text.x = mx + chipW / 2;
+      text.y = dockY + chipH / 2;
+
+      chip.addChild(bg);
+      chip.addChild(text);
+
+      chip.on("pointertap", () => {
+        audioManager.playUIClick();
+        this.gameApp.selectedModuleType = mod.type;
+        this.buildPayloadDock(width, height);
+      });
+
+      dock.addChild(chip);
+    });
+
+    this.container.addChild(dock);
+  }
+
   private buildNextDropButton(width: number, height: number): void {
     const bw = 200,
       bh = 48;
@@ -413,6 +495,10 @@ export class BuildScene {
   }
 
   destroy(): void {
+    if (this.payloadDockContainer) {
+      this.payloadDockContainer.destroy({ children: true });
+      this.payloadDockContainer = null;
+    }
     audioManager.stopBuildAmbient();
     audioManager.stopAlarm();
     this.gameApp.app.ticker.remove(this.onTick);

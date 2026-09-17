@@ -222,3 +222,171 @@
   font-family: var(--font-mono);
   color: var(--color-plasma);
 }
+
+/* Tech Tree Modal */
+.techtree-modal {
+  position: fixed;
+  inset: 40px;
+  background: rgba(7, 11, 20, 0.96);
+  border: 1px solid var(--color-plasma);
+  backdrop-filter: blur(12px);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  pointer-events: auto;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
+  animation: fade-in 0.25s ease-out;
+}
+
+.techtree-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--color-panel-border);
+  padding-bottom: var(--space-3);
+}
+
+.techtree-title {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--color-plasma);
+  letter-spacing: 0.08em;
+  margin: 0;
+}
+
+.techtree-data-badge {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: #ffaa00;
+  background: rgba(255, 170, 0, 0.15);
+  border: 1px solid rgba(255, 170, 0, 0.4);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+}
+
+.techtree-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-titanium);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0 8px;
+}
+
+.techtree-close-btn:hover {
+  color: #fff;
+}
+
+.techtree-branches {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+  overflow-y: auto;
+  flex: 1;
+}
+
+.techtree-branch-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  background: rgba(12, 19, 34, 0.5);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.branch-title {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.branch-title.engineering {
+  color: var(--color-colony);
+}
+.branch-title.operations {
+  color: var(--color-plasma);
+}
+.branch-title.science {
+  color: #ffaa00;
+}
+
+.tech-node-card {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.tech-node-card.unlocked {
+  border-color: var(--color-colony);
+  background: rgba(0, 255, 136, 0.06);
+}
+
+.tech-node-card.can-unlock {
+  border-color: var(--color-plasma);
+}
+
+.node-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.node-desc {
+  font-size: 0.72rem;
+  color: var(--color-titanium);
+  line-height: 1.4;
+}
+
+.node-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.node-cost {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: #ffaa00;
+  font-weight: 700;
+}
+
+.node-btn {
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.node-btn.unlock {
+  background: var(--color-plasma);
+  color: #070b14;
+}
+
+.node-btn.unlocked {
+  background: rgba(0, 255, 136, 0.2);
+  color: var(--color-colony);
+  cursor: default;
+}
+
+.node-btn.locked {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-titanium);
+  cursor: not-allowed;
+}

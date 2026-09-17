@@ -8,6 +8,7 @@
  * Hosts:
  *   - Phase status labels
  *   - Directives & Special Contracts overlay drawer
+ *   - Tech Tree progression modal (Engineering, Operations, Science)
  *   - Contract completion toast notifications
  *   - GameOver & Victory modal screens
  */
@@ -17,6 +18,7 @@ import type { GameApp } from "../../engine/GameApp";
 import type { GamePhase } from "../../engine/events/EventTypes";
 import { eventBus } from "../../engine/events/EventBus";
 import { specialContracts, type Contract } from "../../engine/progression/SpecialContracts";
+import { techTree, type TechNode, type TechBranch } from "../../engine/progression/TechTree";
 import { audioManager } from "../../engine/audio/AudioManager";
 import "./HudRoot.css";
 
@@ -33,6 +35,8 @@ interface ToastData {
 export function HudRoot({ gameApp }: HudRootProps) {
   const [phase, setPhase] = useState<GamePhase>(gameApp.phase);
   const [toast, setToast] = useState<ToastData | null>(null);
+  const [isTechTreeOpen, setIsTechTreeOpen] = useState(false);
+  const [researchData, setResearchData] = useState(25); // starter research data points
 
   useEffect(() => {
     const unsubPhase = eventBus.on("PHASE_CHANGED", ({ to }) => {
@@ -41,6 +45,7 @@ export function HudRoot({ gameApp }: HudRootProps) {
 
     const unsubContract = eventBus.on("CONTRACT_COMPLETED", (data) => {
       audioManager.playPowerUp();
+      setResearchData((prev) => prev + data.rewardData);
       setToast({
         title: data.title,
         rewardCredits: data.rewardCredits,
@@ -57,8 +62,33 @@ export function HudRoot({ gameApp }: HudRootProps) {
 
   return (
     <div className="hud-root-layout" aria-label="Game HUD overlay">
-      {/* Directives & Contracts drawer during gameplay */}
-      {(phase === "descend" || phase === "build") && <DirectivesOverlay />}
+      {/* Top right HUD controls: Directives & Tech Tree */}
+      {(phase === "descend" || phase === "build") && (
+        <div className="directives-hud-corner" style={{ display: "flex", gap: "8px" }}>
+          <DirectivesOverlay />
+          {phase === "build" && (
+            <button
+              className="directives-toggle-btn"
+              onClick={() => {
+                audioManager.playUIClick();
+                setIsTechTreeOpen(true);
+              }}
+              aria-label="Open Tech Tree"
+            >
+              🔬 TECH TREE
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Tech Tree Modal */}
+      {isTechTreeOpen && (
+        <TechTreeModal
+          dataPoints={researchData}
+          onSpendData={(cost) => setResearchData((prev) => Math.max(0, prev - cost))}
+          onClose={() => setIsTechTreeOpen(false)}
+        />
+      )}
 
       {/* Contract Completed Toast */}
       {toast && (
@@ -104,7 +134,7 @@ function DirectivesOverlay() {
   const activeCount = contracts.filter((c) => !c.isCompleted).length;
 
   return (
-    <div className="directives-hud-corner">
+    <div style={{ position: "relative" }}>
       <button
         className="directives-toggle-btn"
         onClick={() => {
@@ -142,6 +172,95 @@ function DirectivesOverlay() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Tech Tree Modal ──────────────────────────────────────────────────────────
+
+interface TechTreeModalProps {
+  dataPoints: number;
+  onSpendData: (cost: number) => void;
+  onClose: () => void;
+}
+
+function TechTreeModal({ dataPoints, onSpendData, onClose }: TechTreeModalProps) {
+  const [nodes, setNodes] = useState<TechNode[]>(techTree.getAllNodes());
+
+  const handleUnlock = (nodeId: string) => {
+    const res = techTree.unlock(nodeId, dataPoints);
+    if (res.success) {
+      audioManager.playPowerUp();
+      onSpendData(res.cost);
+      setNodes([...techTree.getAllNodes()]);
+    }
+  };
+
+  const branches: Array<{ id: TechBranch; label: string; cls: string }> = [
+    { id: "engineering", label: "ENGINEERING", cls: "engineering" },
+    { id: "operations", label: "OPERATIONS", cls: "operations" },
+    { id: "science", label: "SCIENCE", cls: "science" },
+  ];
+
+  return (
+    <div className="techtree-modal">
+      <div className="techtree-header">
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <h2 className="techtree-title">RESEARCH & TECHNOLOGY TREE</h2>
+          <span className="techtree-data-badge">RESEARCH DATA: {dataPoints}</span>
+        </div>
+        <button className="techtree-close-btn" onClick={onClose}>
+          ✕
+        </button>
+      </div>
+
+      <div className="techtree-branches">
+        {branches.map((branch) => {
+          const branchNodes = nodes
+            .filter((n) => n.branch === branch.id)
+            .sort((a, b) => a.cost - b.cost);
+
+          return (
+            <div key={branch.id} className="techtree-branch-col">
+              <div className={`branch-title ${branch.cls}`}>⬡ {branch.label}</div>
+              {branchNodes.map((node) => {
+                const canUnlock = !node.unlocked && techTree.canUnlock(node.id);
+                const hasEnoughData = dataPoints >= node.cost;
+
+                return (
+                  <div
+                    key={node.id}
+                    className={`tech-node-card ${node.unlocked ? "unlocked" : canUnlock ? "can-unlock" : ""}`}
+                  >
+                    <div className="node-name">{node.displayName}</div>
+                    <div className="node-desc">{node.description}</div>
+                    <div className="node-footer">
+                      <span className="node-cost">{node.cost} DATA</span>
+                      {node.unlocked ? (
+                        <button className="node-btn unlocked" disabled>
+                          ✓ ACTIVE
+                        </button>
+                      ) : canUnlock ? (
+                        <button
+                          className="node-btn unlock"
+                          disabled={!hasEnoughData}
+                          onClick={() => handleUnlock(node.id)}
+                        >
+                          {hasEnoughData ? "UNLOCK" : "NEED DATA"}
+                        </button>
+                      ) : (
+                        <button className="node-btn locked" disabled>
+                          LOCKED
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
