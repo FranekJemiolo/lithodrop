@@ -23,10 +23,7 @@ class EventBus {
    * Subscribe to a typed game event.
    * Returns an unsubscribe function for convenient cleanup.
    */
-  on<K extends keyof GameEventMap>(
-    event: K,
-    handler: EventHandler<GameEventMap[K]>,
-  ): () => void {
+  on<K extends keyof GameEventMap>(event: K, handler: EventHandler<GameEventMap[K]>): () => void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, new Set());
     }

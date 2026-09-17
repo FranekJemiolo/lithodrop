@@ -17,9 +17,8 @@ describe("Module smoke tests", () => {
   });
 
   it("grid/types module exports toGridKey and fromGridKey", async () => {
-    const { toGridKey, fromGridKey, getNeighborCoords } = await import(
-      "../../src/engine/grid/types"
-    );
+    const { toGridKey, fromGridKey, getNeighborCoords } =
+      await import("../../src/engine/grid/types");
     expect(toGridKey({ qx: 3, qy: -2 })).toBe("3,-2");
     expect(fromGridKey("3,-2")).toEqual({ qx: 3, qy: -2 });
     const neighbors = getNeighborCoords({ qx: 0, qy: 0 });

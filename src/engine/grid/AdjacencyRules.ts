@@ -97,8 +97,7 @@ export function getApplicableBonuses(
   presentNeighborTypes: ModuleType[],
 ): AdjacencyBonus[] {
   return ADJACENCY_RULES.filter(
-    (rule) =>
-      rule.sourceType === sourceType && presentNeighborTypes.includes(rule.neighborType),
+    (rule) => rule.sourceType === sourceType && presentNeighborTypes.includes(rule.neighborType),
   );
 }
 

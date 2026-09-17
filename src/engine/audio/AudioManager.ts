@@ -464,7 +464,11 @@ export class AudioManager {
 
   setMasterVolume(value: number): void {
     if (!this.masterGain) return;
-    this.masterGain.gain.setTargetAtTime(Math.max(0, Math.min(1, value)), this.ctx!.currentTime, 0.05);
+    this.masterGain.gain.setTargetAtTime(
+      Math.max(0, Math.min(1, value)),
+      this.ctx!.currentTime,
+      0.05,
+    );
   }
 
   setSFXVolume(value: number): void {
@@ -474,7 +478,11 @@ export class AudioManager {
 
   setMusicVolume(value: number): void {
     if (!this.musicBus) return;
-    this.musicBus.gain.setTargetAtTime(Math.max(0, Math.min(1, value)), this.ctx!.currentTime, 0.05);
+    this.musicBus.gain.setTargetAtTime(
+      Math.max(0, Math.min(1, value)),
+      this.ctx!.currentTime,
+      0.05,
+    );
   }
 
   // ─── Cleanup ──────────────────────────────────────────────────────────────

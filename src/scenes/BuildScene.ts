@@ -121,7 +121,10 @@ export class BuildScene {
     const g = this.gridGraphics;
 
     // Find extent
-    let minQx = -3, maxQx = 3, minQy = -2, maxQy = 2;
+    let minQx = -3,
+      maxQx = 3,
+      minQy = -2,
+      maxQy = 2;
     for (const m of modules) {
       minQx = Math.min(minQx, m.qx - 2);
       maxQx = Math.max(maxQx, m.qx + 2);
@@ -175,7 +178,9 @@ export class BuildScene {
     g.rect(x + 4, y + CELL_PX - 8, CELL_PX - 8, 4);
     g.fill({ color: 0x1a2a3a });
     g.rect(x + 4, y + CELL_PX - 8, barWidth, 4);
-    g.fill({ color: healthFraction > 0.5 ? 0x39ff6b : healthFraction > 0.25 ? 0xffd700 : 0xff2d2d });
+    g.fill({
+      color: healthFraction > 0.5 ? 0x39ff6b : healthFraction > 0.25 ? 0xffd700 : 0xff2d2d,
+    });
 
     // Module type abbreviation label
     const label = new Text({
@@ -280,7 +285,13 @@ export class BuildScene {
 
     const title = new Text({
       text: "MEGACORP TREASURY",
-      style: new TextStyle({ fontFamily: "Outfit", fontSize: 10, fontWeight: "700", fill: 0x5a6a80, letterSpacing: 3 }),
+      style: new TextStyle({
+        fontFamily: "Outfit",
+        fontSize: 10,
+        fontWeight: "700",
+        fill: 0x5a6a80,
+        letterSpacing: 3,
+      }),
     });
     title.x = width - 252;
     title.y = 58;
@@ -288,7 +299,12 @@ export class BuildScene {
 
     this.creditsText = new Text({
       text: "CR  2,000",
-      style: new TextStyle({ fontFamily: "JetBrains Mono", fontSize: 20, fontWeight: "500", fill: 0x00d4ff }),
+      style: new TextStyle({
+        fontFamily: "JetBrains Mono",
+        fontSize: 20,
+        fontWeight: "500",
+        fill: 0x00d4ff,
+      }),
     });
     this.creditsText.x = width - 252;
     this.creditsText.y = 74;
@@ -343,7 +359,8 @@ export class BuildScene {
   }
 
   private buildNextDropButton(width: number, height: number): void {
-    const bw = 200, bh = 48;
+    const bw = 200,
+      bh = 48;
     const bx = width / 2 - bw / 2;
     const by = height - 80;
 

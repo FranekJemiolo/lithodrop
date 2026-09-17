@@ -117,8 +117,7 @@ export class TelemetryReticle {
     // Color: green safe, yellow caution, red critical
     const downVelMs = Math.max(0, vel.y) * 0.05; // rough m/s conversion
     const dangerRatio = downVelMs / impactTolerance;
-    const vectorColor =
-      dangerRatio < 0.5 ? 0x39ff6b : dangerRatio < 0.8 ? 0xffd700 : 0xff2d2d;
+    const vectorColor = dangerRatio < 0.5 ? 0x39ff6b : dangerRatio < 0.8 ? 0xffd700 : 0xff2d2d;
 
     g.moveTo(0, 0);
     g.lineTo(endX, endY);

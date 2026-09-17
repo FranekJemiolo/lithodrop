@@ -34,7 +34,6 @@ export class BuildPhaseSystem {
   private readonly unsubAnchorAuth: () => void;
 
   constructor(planet: PlanetDefinition) {
-
     this.grid = new GridState();
     this.graph = new DependencyGraph();
     this.economy = new EconomyEngine({

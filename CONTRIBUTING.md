@@ -39,12 +39,12 @@ npm run dev
 
 Every commit is checked by `prek` (the pre-commit runner). The following checks must pass before a commit is accepted:
 
-| Check | Command | Tool |
-|---|---|---|
-| Format | `npx prettier --check` | Prettier 3 |
-| Lint | `npm run lint` | oxlint |
-| Types | `npx tsc --noEmit` | TypeScript ~6 |
-| Unit Tests | `npm run test:unit` | Vitest 5 |
+| Check      | Command                | Tool          |
+| ---------- | ---------------------- | ------------- |
+| Format     | `npx prettier --check` | Prettier 3    |
+| Lint       | `npm run lint`         | oxlint        |
+| Types      | `npx tsc --noEmit`     | TypeScript ~6 |
+| Unit Tests | `npm run test:unit`    | Vitest 5      |
 
 Run all checks manually at any time:
 
@@ -72,6 +72,7 @@ npx vitest --watch tests/unit
 ```
 
 **What to test:**
+
 - Physics math (impact thresholds, fuel consumption curves)
 - Economy engine (credit accumulation formulas, tax tier escalation)
 - Grid logic (adjacency rules, BFS pathfinding, structural stress)

@@ -97,7 +97,14 @@ describe("TechTree — modifiers", () => {
   });
 
   it("reinforced_hull + precision_landing stack impact tolerance to 1.38×", () => {
-    const tree = new TechTree(["improved_struts", "reinforced_hull", "fuel_efficiency", "overclocked_thrusters", "dual_engine", "precision_landing"]);
+    const tree = new TechTree([
+      "improved_struts",
+      "reinforced_hull",
+      "fuel_efficiency",
+      "overclocked_thrusters",
+      "dual_engine",
+      "precision_landing",
+    ]);
     const mods = tree.getModifiers();
     // 1.2 × 1.15 = 1.38
     expect(mods.impactToleranceMultiplier).toBeCloseTo(1.38, 2);
@@ -110,7 +117,12 @@ describe("TechTree — modifiers", () => {
   });
 
   it("quantum_anchoring reduces anchor power requirement to 0.7×", () => {
-    const tree = new TechTree(["improved_struts", "reinforced_hull", "advanced_alloys", "quantum_anchoring"]);
+    const tree = new TechTree([
+      "improved_struts",
+      "reinforced_hull",
+      "advanced_alloys",
+      "quantum_anchoring",
+    ]);
     const mods = tree.getModifiers();
     expect(mods.anchorPowerMultiplier).toBeCloseTo(0.7, 5);
   });

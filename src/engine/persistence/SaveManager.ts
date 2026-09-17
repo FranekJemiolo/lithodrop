@@ -104,7 +104,9 @@ export class SaveManager {
     });
   }
 
-  async listSlots(): Promise<Array<Pick<SaveState, "slot" | "savedAt" | "planetId" | "credits" | "playTimeSeconds"> | null>> {
+  async listSlots(): Promise<
+    Array<Pick<SaveState, "slot" | "savedAt" | "planetId" | "credits" | "playTimeSeconds"> | null>
+  > {
     await this.open();
     return new Promise((resolve, reject) => {
       const tx = this.db!.transaction(STORE_NAME, "readonly");
@@ -112,7 +114,10 @@ export class SaveManager {
       const req = store.getAll();
       req.onsuccess = () => {
         const saves = req.result as SaveState[];
-        const slots: Array<Pick<SaveState, "slot" | "savedAt" | "planetId" | "credits" | "playTimeSeconds"> | null> = [null, null, null];
+        const slots: Array<Pick<
+          SaveState,
+          "slot" | "savedAt" | "planetId" | "credits" | "playTimeSeconds"
+        > | null> = [null, null, null];
         for (const save of saves) {
           slots[save.slot] = {
             slot: save.slot,

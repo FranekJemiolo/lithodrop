@@ -91,7 +91,9 @@ export class DependencyGraph {
 
   /** Get all nodes that are currently orphaned (not powered) */
   getOrphanedNodes(): GraphNode[] {
-    return Array.from(this.nodes.values()).filter((n) => !n.isPowered && getModuleDef(n.instance.type).powerDelta < 0);
+    return Array.from(this.nodes.values()).filter(
+      (n) => !n.isPowered && getModuleDef(n.instance.type).powerDelta < 0,
+    );
   }
 
   /**
@@ -202,11 +204,7 @@ export class DependencyGraph {
    * Used by drone dispatch to find movement paths.
    * Returns null if no path exists (module is orphaned).
    */
-  findPath(
-    grid: GridState,
-    fromInstanceId: string,
-    toInstanceId: string,
-  ): GridCoord[] | null {
+  findPath(grid: GridState, fromInstanceId: string, toInstanceId: string): GridCoord[] | null {
     const fromNode = this.nodes.get(fromInstanceId);
     const toNode = this.nodes.get(toInstanceId);
     if (!fromNode || !toNode) return null;

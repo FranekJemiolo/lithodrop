@@ -202,10 +202,7 @@ export function calculateDropBounty(params: {
   const fuelScore = 0.7 + params.fuelRemaining * 0.6;
 
   // Softer landing = higher score (up to 1.5× for perfect landing)
-  const softnessFraction = Math.max(
-    0,
-    1 - params.impactVelocity / params.impactTolerance,
-  );
+  const softnessFraction = Math.max(0, 1 - params.impactVelocity / params.impactTolerance);
   const softnessScore = 1.0 + Math.min(softnessFraction, 0.5);
 
   return Math.round(baseBounty * velocityScore * fuelScore * softnessScore);

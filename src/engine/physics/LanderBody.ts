@@ -132,11 +132,7 @@ export function applyThrust(
  * @param direction - -1 (counterclockwise) or +1 (clockwise)
  * @param torqueNm - Torque magnitude in Newton-meters
  */
-export function applyRCS(
-  body: Matter.Body,
-  direction: -1 | 0 | 1,
-  torqueNm: number,
-): void {
+export function applyRCS(body: Matter.Body, direction: -1 | 0 | 1, torqueNm: number): void {
   if (direction === 0) return;
   // Matter.js torque: positive = clockwise
   body.torque += (direction * torqueNm) / 1_000_000;

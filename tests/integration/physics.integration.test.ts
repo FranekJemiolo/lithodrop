@@ -7,7 +7,11 @@
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { PhysicsWorld } from "../../src/engine/physics/PhysicsWorld";
-import { createLanderBody, applyThrust, getDownwardVelocity } from "../../src/engine/physics/LanderBody";
+import {
+  createLanderBody,
+  applyThrust,
+  getDownwardVelocity,
+} from "../../src/engine/physics/LanderBody";
 import { FUEL_CONSUMPTION_RATE, THRUSTER_FORCE_N } from "../../src/constants/physics";
 
 describe("PhysicsWorld + LanderBody integration", () => {

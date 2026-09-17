@@ -16,6 +16,7 @@
 ## Features
 
 ### Action Phase — The Descent
+
 - **2D Rigid-Body Physics** — PixiJS v8 (WebGL) rendering + Matter.js physics at a fixed 50Hz simulation tick, decoupled from the render frame rate.
 - **Dynamic Payload Aerodynamics** — Each module type has a unique mass and drag profile. Dropping a wide Solar Array creates a sail effect in crosswinds; a narrow Deep Core Drill slices straight through.
 - **Split-Screen Touch Controls** — Left half of screen rotates the lander; right half fires the main thruster. No virtual joysticks to miss.
@@ -23,6 +24,7 @@
 - **Telemetry Reticle** — A circular HUD element that tracks with the ship: left arc = fuel, right arc = hull integrity, center vector = velocity/trajectory.
 
 ### Strategy Phase — Base Construction
+
 - **Sparse Grid System** — Modules snap to integer (qx, qy) coordinates. The save payload stays tiny regardless of base sprawl.
 - **Dependency Graph** — BFS-driven graph over all placed modules for power, water, air, and data flow. Severed connections instantly orphan downstream modules.
 - **Adjacency Bonuses** — Strategic placement rewards: Hydroponics Dome adjacent to Crew Habitat boosts Data output by 25%.
@@ -30,12 +32,14 @@
 - **Event-Driven Drone Dispatch** — Rigger, Welder, and Courier drones are dispatched from a max-heap priority queue keyed on damage severity.
 
 ### Meta-Game
+
 - **6-Planet Campaign** — Luna Prime → Serpentine Rifts → Thalassa → Zephyrus → The Outer Dark → Vulcanis. Each planet introduces unique biomes, gravity profiles, and hazards.
 - **Hex-Grid Tech Tree** — Three aerospace disciplines (Propulsion, Telemetry, Chassis) with cross-node dependencies. Overclock any node for 15 seconds at the cost of heat buildup.
 - **Special Delivery Contracts** — High-risk, high-reward drops with unique mechanics (executive G-force limits, antimatter feathering, live alien payload).
 - **Adaptive Music** — Web Audio API stem-mixing: descent tension → touchdown silence → healthy base lo-fi → crisis dissonance, all mixed in real time.
 
 ### PWA & Performance
+
 - **60 FPS on Mobile** — PixiJS WebGL batching + Matter.js fixed-tick physics keep rendering smooth on mid-range Android and iOS.
 - **Fully Offline** — Workbox `CacheFirst` caches all game assets on first visit. Play on an airplane.
 - **Home Screen App** — `display: fullscreen`, `orientation: landscape`, haptic feedback via `navigator.vibrate()`.
@@ -45,21 +49,21 @@
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Rendering | **PixiJS v8** (WebGL2) |
-| Physics | **Matter.js 0.20** (fixed 50Hz tick) |
-| Particles | **@pixi/particle-emitter 5** |
-| UI / HUD | **React 19** + Vanilla CSS |
-| Audio | **Web Audio API** (procedural synthesis) |
-| Build | **Vite 8** + TypeScript ~6 |
-| PWA | **vite-plugin-pwa** + Workbox |
-| Unit Tests | **Vitest 5** |
-| E2E Tests | **Playwright 1.63** |
-| Linting | **oxlint** |
-| Formatting | **Prettier 3** |
-| Pre-commit | **prek** |
-| CI/CD | **GitHub Actions** → GitHub Pages |
+| Layer      | Technology                               |
+| ---------- | ---------------------------------------- |
+| Rendering  | **PixiJS v8** (WebGL2)                   |
+| Physics    | **Matter.js 0.20** (fixed 50Hz tick)     |
+| Particles  | **@pixi/particle-emitter 5**             |
+| UI / HUD   | **React 19** + Vanilla CSS               |
+| Audio      | **Web Audio API** (procedural synthesis) |
+| Build      | **Vite 8** + TypeScript ~6               |
+| PWA        | **vite-plugin-pwa** + Workbox            |
+| Unit Tests | **Vitest 5**                             |
+| E2E Tests  | **Playwright 1.63**                      |
+| Linting    | **oxlint**                               |
+| Formatting | **Prettier 3**                           |
+| Pre-commit | **prek**                                 |
+| CI/CD      | **GitHub Actions** → GitHub Pages        |
 
 ---
 

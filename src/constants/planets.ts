@@ -288,8 +288,7 @@ export const PLANETS: PlanetDefinition[] = [
         type: "ash_clog",
         severity: "medium",
         meanIntervalSeconds: 20,
-        description:
-          "Volcanic ash progressively clogs thruster nozzles, reducing efficiency.",
+        description: "Volcanic ash progressively clogs thruster nozzles, reducing efficiency.",
       },
     ],
     quotaCreditsPerSecond: 400,

@@ -55,8 +55,7 @@ export class InputSystem {
 
   /** Returns the current normalized input state */
   getState(): InputState {
-    const thrustKey =
-      this.keys.has("KeyW") || this.keys.has("ArrowUp") || this.keys.has("Space");
+    const thrustKey = this.keys.has("KeyW") || this.keys.has("ArrowUp") || this.keys.has("Space");
     const rotLeftKey = this.keys.has("KeyA") || this.keys.has("ArrowLeft");
     const rotRightKey = this.keys.has("KeyD") || this.keys.has("ArrowRight");
 
@@ -74,10 +73,8 @@ export class InputSystem {
     else if (touchRotNone && this.leftPointerDown) rotation = 0;
 
     // Overclock: Shift+Space or double-tap (tracked separately)
-    const overclockPrevious =
-      this.prevKeys.has("ShiftLeft") || this.prevKeys.has("ShiftRight");
-    const overclockCurrent =
-      this.keys.has("ShiftLeft") || this.keys.has("ShiftRight");
+    const overclockPrevious = this.prevKeys.has("ShiftLeft") || this.prevKeys.has("ShiftRight");
+    const overclockCurrent = this.keys.has("ShiftLeft") || this.keys.has("ShiftRight");
     const overclockPressed = overclockCurrent && !overclockPrevious;
 
     const pausePrevious = this.prevKeys.has("Escape");

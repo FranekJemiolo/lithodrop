@@ -117,8 +117,8 @@ describe("DependencyGraph — resource flow summary", () => {
     const grid = new GridState();
     const graph = new DependencyGraph();
 
-    grid.placeModule({ qx: 0, qy: 0 }, "solar_array");   // +40 power
-    grid.placeModule({ qx: 1, qy: 0 }, "crew_habitat");  // -20 power
+    grid.placeModule({ qx: 0, qy: 0 }, "solar_array"); // +40 power
+    grid.placeModule({ qx: 1, qy: 0 }, "crew_habitat"); // -20 power
 
     const flow = graph.rebuild(grid);
 

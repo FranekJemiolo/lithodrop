@@ -62,7 +62,11 @@ export class DescendScene {
 
     // ── Terrain ──────────────────────────────────────────────────────────────
     this.terrainGraphics = new Graphics();
-    const { bodies: terrainBodies, heightmap, sampleStep } = createTerrainBodies({
+    const {
+      bodies: terrainBodies,
+      heightmap,
+      sampleStep,
+    } = createTerrainBodies({
       width,
       surfaceY: this.surfaceY,
       seed: planet.terrainSeed,

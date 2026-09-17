@@ -82,8 +82,7 @@ export const MODULE_REGISTRY: Record<ModuleType, ModuleDefinition> = {
   crew_habitat: {
     type: "crew_habitat",
     displayName: "Crew Habitat",
-    description:
-      "Pressurised living quarters for 12 engineers. Requires 20 power and 5 water/s.",
+    description: "Pressurised living quarters for 12 engineers. Requires 20 power and 5 water/s.",
     mass: 3200,
     dragCoefficient: 0.8,
     impactTolerance: 7.0,
@@ -272,8 +271,7 @@ export const MODULE_REGISTRY: Record<ModuleType, ModuleDefinition> = {
   comms_relay: {
     type: "comms_relay",
     displayName: "Comms Relay",
-    description:
-      "Maintains orbital link. Boosts Science Lab data output by 40% when adjacent.",
+    description: "Maintains orbital link. Boosts Science Lab data output by 40% when adjacent.",
     mass: 500,
     dragCoefficient: 0.6,
     impactTolerance: 4.0,

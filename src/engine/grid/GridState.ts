@@ -98,7 +98,14 @@ export class GridState {
   }
 
   /** Serialize to save format. */
-  toJSON(): Array<{ qx: number; qy: number; type: ModuleType; health: number; is_active: boolean; metadata: Record<string, number | string | boolean> }> {
+  toJSON(): Array<{
+    qx: number;
+    qy: number;
+    type: ModuleType;
+    health: number;
+    is_active: boolean;
+    metadata: Record<string, number | string | boolean>;
+  }> {
     return this.getAllModules().map((m) => ({
       qx: m.qx,
       qy: m.qy,
@@ -110,7 +117,16 @@ export class GridState {
   }
 
   /** Restore from save format. */
-  fromJSON(data: Array<{ qx: number; qy: number; type: ModuleType; health: number; is_active: boolean; metadata?: Record<string, number | string | boolean> }>): void {
+  fromJSON(
+    data: Array<{
+      qx: number;
+      qy: number;
+      type: ModuleType;
+      health: number;
+      is_active: boolean;
+      metadata?: Record<string, number | string | boolean>;
+    }>,
+  ): void {
     this.cells.clear();
     this.nextInstanceId = 1;
     for (const entry of data) {
@@ -118,7 +134,10 @@ export class GridState {
       const instance = this.getModule({ qx: entry.qx, qy: entry.qy })!;
       instance.health = entry.health;
       instance.isActive = entry.is_active;
-      instance.metadata = (entry.metadata ?? {}) as Record<string, number | string | boolean | undefined>;
+      instance.metadata = (entry.metadata ?? {}) as Record<
+        string,
+        number | string | boolean | undefined
+      >;
     }
   }
 
