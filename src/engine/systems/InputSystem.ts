@@ -11,6 +11,8 @@
  * No game logic lives here — this is a pure input mapper.
  */
 
+import { HapticManager } from "../audio/HapticManager";
+
 export interface InputState {
   /** [0–1] throttle level */
   thrust: number;
@@ -26,9 +28,12 @@ export class InputSystem {
   private keys = new Set<string>();
   private prevKeys = new Set<string>();
 
-  // Touch state
+  // Touch state with discrete pointerId tracking for split-screen separation
   private leftPointerDown = false;
   private rightPointerDown = false;
+  private activeLeftPointerId: number | null = null;
+  private activeRightPointerId: number | null = null;
+  private leftStartX = 0;
   private leftSwipeDirection: -1 | 0 | 1 = 0;
 
   // Canvas split point (updated on resize)
@@ -105,34 +110,47 @@ export class InputSystem {
   };
 
   private readonly onPointerDown = (e: PointerEvent): void => {
+    // Prevent default browser behaviors (pull-to-refresh, page swipe back, scroll)
+    e.preventDefault();
     const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
     const x = e.clientX - rect.left;
 
     if (x < this.canvasMidX) {
       this.leftPointerDown = true;
-      this.leftSwipeDirection = 0; // Will be set on move
+      this.activeLeftPointerId = e.pointerId;
+      this.leftStartX = x;
+      this.leftSwipeDirection = 0;
     } else {
       this.rightPointerDown = true;
+      this.activeRightPointerId = e.pointerId;
+      HapticManager.triggerThrusterPulse();
     }
   };
 
   private readonly onPointerMove = (e: PointerEvent): void => {
-    if (!this.leftPointerDown) return;
-    // Swipe direction: positive movementX = right (CW rotation)
-    if (Math.abs(e.movementX) > 2) {
-      this.leftSwipeDirection = e.movementX > 0 ? 1 : -1;
+    e.preventDefault();
+    if (e.pointerId === this.activeLeftPointerId && this.leftPointerDown) {
+      const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const deltaX = x - this.leftStartX;
+      if (Math.abs(deltaX) > 10) {
+        this.leftSwipeDirection = deltaX > 0 ? 1 : -1;
+      } else if (Math.abs(e.movementX) > 1.5) {
+        this.leftSwipeDirection = e.movementX > 0 ? 1 : -1;
+      }
     }
   };
 
   private readonly onPointerUp = (e: PointerEvent): void => {
-    const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
-    const x = e.clientX - rect.left;
-
-    if (x < this.canvasMidX) {
+    e.preventDefault();
+    if (e.pointerId === this.activeLeftPointerId) {
       this.leftPointerDown = false;
+      this.activeLeftPointerId = null;
       this.leftSwipeDirection = 0;
-    } else {
+    }
+    if (e.pointerId === this.activeRightPointerId) {
       this.rightPointerDown = false;
+      this.activeRightPointerId = null;
     }
   };
 }

@@ -58,8 +58,14 @@
   color: var(--color-titanium);
   font-size: 1.6rem;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 8px 16px;
+  min-height: 48px;
+  min-width: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: color 0.2s ease;
+  touch-action: manipulation;
 }
 
 .hex-tree-close-btn:hover {

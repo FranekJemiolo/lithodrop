@@ -18,6 +18,7 @@ import { getPlanetById } from "../constants/planets";
 import { getModuleDef } from "../engine/grid/ModuleRegistry";
 import type { ModuleInstance, ModuleType } from "../engine/grid/types";
 import { audioManager } from "../engine/audio/AudioManager";
+import { HapticManager } from "../engine/audio/HapticManager";
 
 // Grid cell size in pixels
 const CELL_PX = 72;
@@ -63,6 +64,7 @@ export class BuildScene {
     this.unsubModuleSnapped = eventBus.on("MODULE_SNAPPED", (ev) => {
       this.renderGrid();
       audioManager.playModuleSnap();
+      HapticManager.triggerSnap();
       this.triggerMagneticSnapArc(ev.qx, ev.qy);
     });
   }
@@ -598,10 +600,10 @@ export class BuildScene {
     ];
 
     const chipW = Math.min(95, (width - 40) / modules.length);
-    const chipH = 28;
+    const chipH = 48; // Minimum 48px touch hitbox for mobile accessibility
     const totalW = modules.length * chipW + (modules.length - 1) * 6;
     const startX = width / 2 - totalW / 2;
-    const dockY = height - 120;
+    const dockY = height - 142;
 
     const header = new Text({
       text: "NEXT PAYLOAD:",
@@ -625,9 +627,9 @@ export class BuildScene {
       chip.cursor = "pointer";
 
       const bg = new Graphics();
-      bg.roundRect(mx, dockY, chipW, chipH, 5);
+      bg.roundRect(mx, dockY, chipW, chipH, 6);
       bg.fill({ color: isSelected ? 0x00d4ff : 0x0f172a });
-      bg.stroke({ color: isSelected ? 0x00d4ff : 0x334155, width: 1 });
+      bg.stroke({ color: isSelected ? 0x00d4ff : 0x334155, width: 1.5 });
 
       const text = new Text({
         text: mod.label,
@@ -647,6 +649,7 @@ export class BuildScene {
 
       chip.on("pointertap", () => {
         audioManager.playUIClick();
+        HapticManager.triggerUIClick();
         this.gameApp.selectedModuleType = mod.type;
         this.buildPayloadDock(width, height);
       });
@@ -689,6 +692,7 @@ export class BuildScene {
 
     btn.on("pointertap", () => {
       audioManager.playUIClick();
+      HapticManager.triggerUIClick();
       void this.gameApp.transitionTo("descend");
     });
 

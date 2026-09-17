@@ -28,6 +28,7 @@ import { PAYLOAD_PROFILES } from "../constants/physics";
 import type { ModuleType } from "../engine/grid/types";
 import { getModuleDef } from "../engine/grid/ModuleRegistry";
 import { audioManager } from "../engine/audio/AudioManager";
+import { HapticManager } from "../engine/audio/HapticManager";
 import { HazardSystem } from "../engine/physics/HazardSystem";
 import { HazardRenderer } from "../engine/entities/HazardRenderer";
 
@@ -175,6 +176,9 @@ export class DescendScene {
         planet.terrainColor,
       );
 
+      // Mobile Haptic Feedback
+      HapticManager.triggerTouchdown(ev.velocity, def.mass, ev.survived);
+
       if (ev.survived) {
         audioManager.playLandingSuccess();
       } else {
@@ -202,9 +206,10 @@ export class DescendScene {
     // Update environmental hazard visuals
     this.hazardRenderer.update(ticker.deltaMS);
 
-    // Audio SFX updates
+    // Audio SFX & Haptics updates
     if (inputState.thrust > 0 && state.fuelKg > 0) {
       audioManager.playThruster(inputState.thrust);
+      HapticManager.triggerThrusterPulse();
     } else {
       audioManager.stopThruster();
     }

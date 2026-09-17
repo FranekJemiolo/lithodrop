@@ -182,10 +182,7 @@ export class LanderEntity {
 
   /** Trigger a brief (3-6 frames / ~120ms) impact squash & stretch deformation */
   triggerImpactSquash(impactVelocity: number, mass: number): void {
-    this.squashIntensity = Math.min(
-      0.45,
-      Math.max(0.18, (impactVelocity / 14) * (mass / 8400)),
-    );
+    this.squashIntensity = Math.min(0.45, Math.max(0.18, (impactVelocity / 14) * (mass / 8400)));
     this.squashDurationMs = 130;
     this.squashElapsedMs = 0;
     this.isSquashing = true;
