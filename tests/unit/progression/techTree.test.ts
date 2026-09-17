@@ -126,6 +126,38 @@ describe("TechTree — modifiers", () => {
     const mods = tree.getModifiers();
     expect(mods.anchorPowerMultiplier).toBeCloseTo(0.7, 5);
   });
+
+  it("dual_engine boosts RCS torque by +40%", () => {
+    const tree = new TechTree(["fuel_efficiency", "overclocked_thrusters", "dual_engine"]);
+    const mods = tree.getModifiers();
+    expect(mods.rcsTorqueMultiplier).toBeCloseTo(1.4, 5);
+  });
+
+  it("prevents double-spending and cannot unlock the same node twice", () => {
+    const tree = new TechTree();
+    let balance = 10;
+    const res1 = tree.unlock("improved_struts", balance);
+    expect(res1.success).toBe(true);
+    balance -= res1.cost;
+    expect(balance).toBe(5);
+
+    // Attempt double-spend on the exact same node
+    const res2 = tree.unlock("improved_struts", balance);
+    expect(res2.success).toBe(false);
+    expect(res2.cost).toBe(0);
+    // Balance remains untouched
+    expect(balance).toBe(5);
+  });
+
+  it("rejects unlocks when points balance is insufficient and prevents negative points", () => {
+    const tree = new TechTree();
+    let balance = 4; // improved_struts costs 5
+    const res = tree.unlock("improved_struts", balance);
+    expect(res.success).toBe(false);
+    if (res.success) balance -= res.cost;
+    expect(balance).toBe(4);
+    expect(balance).toBeGreaterThanOrEqual(0);
+  });
 });
 
 describe("TechTree — serialization", () => {

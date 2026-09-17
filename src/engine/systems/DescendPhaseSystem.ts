@@ -24,6 +24,7 @@ import {
   getDownwardVelocity,
   type LanderBodyState,
 } from "../physics/LanderBody";
+import { techTree } from "../progression/TechTree";
 import type { InputSystem } from "./InputSystem";
 import {
   PHYSICS_DT_MS,
@@ -36,6 +37,10 @@ import {
   ATMOSPHERE_DENSITY,
 } from "../../constants/physics";
 import type { ModuleType } from "../grid/types";
+
+import type { HazardSystem } from "../physics/HazardSystem";
+import { TelemetryTracker, type TelemetryData } from "../physics/TelemetryTracker";
+import { specialContracts } from "../progression/SpecialContracts";
 
 const DEFAULT_MODULE_COST: Record<ModuleType, number> = {
   titanium_foundation: 800,
@@ -59,6 +64,8 @@ export class DescendPhaseSystem {
   private readonly input: InputSystem;
   private landerState: LanderBodyState;
   private readonly planetId: string;
+  private readonly hazardSystem?: HazardSystem;
+  readonly telemetryTracker = new TelemetryTracker();
   private landed = false;
 
   constructor(
@@ -66,11 +73,13 @@ export class DescendPhaseSystem {
     input: InputSystem,
     landerState: LanderBodyState,
     planetId: string,
+    hazardSystem?: HazardSystem,
   ) {
     this.physicsWorld = physicsWorld;
     this.input = input;
     this.landerState = landerState;
     this.planetId = planetId;
+    this.hazardSystem = hazardSystem;
 
     // Listen for Matter.js collision events
     Matter.Events.on(this.physicsWorld.engine, "collisionStart", this.onCollisionStart);
@@ -84,19 +93,24 @@ export class DescendPhaseSystem {
     const inputState = this.input.getState();
     const dtSeconds = ticker.deltaMS / 1000;
 
+    const mods = techTree.getModifiers();
+    const effectiveThrust = THRUSTER_FORCE_N * mods.thrusterForceMultiplier;
+    const effectiveFuelRate = FUEL_CONSUMPTION_RATE * mods.fuelConsumptionMultiplier;
+    const effectiveTorque = RCS_TORQUE_NM * mods.rcsTorqueMultiplier;
+
     // Apply thrust
     if (inputState.thrust > 0) {
       this.landerState = applyThrust(
         this.landerState,
         inputState.thrust,
-        THRUSTER_FORCE_N,
-        FUEL_CONSUMPTION_RATE,
+        effectiveThrust,
+        effectiveFuelRate,
         dtSeconds,
       );
     }
 
     // Apply RCS rotation
-    applyRCS(this.landerState.body, inputState.rotation, RCS_TORQUE_NM);
+    applyRCS(this.landerState.body, inputState.rotation, effectiveTorque);
 
     // Apply atmospheric drag
     const atmosphericDensity = ATMOSPHERE_DENSITY[this.planetId] ?? 0;
@@ -105,8 +119,21 @@ export class DescendPhaseSystem {
       applyAtmosphericDrag(this.landerState.body, profile.dragCoefficient, atmosphericDensity);
     }
 
+    // Apply planetary environmental hazards
+    if (this.hazardSystem) {
+      const hazardRes = this.hazardSystem.update(this.landerState, dtSeconds, this.landed);
+      this.landerState = hazardRes.state;
+    }
+
     // Step physics
     this.physicsWorld.step(ticker.deltaMS);
+
+    // Track telemetry (acceleration, G-force, tilt) and check VIP contracts
+    this.telemetryTracker.update(
+      this.landerState.body,
+      dtSeconds,
+      specialContracts.getActiveVipContract(),
+    );
 
     // Track max descent velocity
     const downVel = getDownwardVelocity(this.landerState.body);
@@ -118,6 +145,11 @@ export class DescendPhaseSystem {
   /** Get current lander state (for HUD rendering) */
   getLanderState(): Readonly<LanderBodyState> {
     return this.landerState;
+  }
+
+  /** Get current telemetry data */
+  getTelemetry(): TelemetryData {
+    return this.telemetryTracker.getData();
   }
 
   private readonly onCollisionStart = (event: Matter.IEventCollision<Matter.Engine>): void => {
@@ -141,12 +173,16 @@ export class DescendPhaseSystem {
     this.landed = true;
 
     const profile = PAYLOAD_PROFILES[this.landerState.moduleType];
+    const mods = techTree.getModifiers();
+    const baseTolerance = profile?.impactTolerance ?? 5;
+    const effectiveTolerance = baseTolerance * mods.impactToleranceMultiplier;
+
     const impactVelocity = Math.max(0, getDownwardVelocity(this.landerState.body));
 
     // Convert from pixel velocity to m/s (rough approximation)
     const impactMs = impactVelocity * (PHYSICS_DT_MS / 1000) * 2;
 
-    const impactDamage = calculateImpactDamage(impactMs, profile?.impactTolerance ?? 5);
+    const impactDamage = calculateImpactDamage(impactMs, effectiveTolerance);
     const survived = impactDamage < 100;
 
     const bounty = survived
@@ -155,7 +191,7 @@ export class DescendPhaseSystem {
           maxDescentVelocity: this.landerState.maxDescentVelocity,
           fuelRemaining: this.landerState.fuelKg / this.landerState.maxFuelKg,
           impactVelocity: impactMs,
-          impactTolerance: profile?.impactTolerance ?? 5,
+          impactTolerance: effectiveTolerance,
         })
       : 0;
 

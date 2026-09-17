@@ -18,7 +18,7 @@ import type { GameApp } from "../../engine/GameApp";
 import type { GamePhase } from "../../engine/events/EventTypes";
 import { eventBus } from "../../engine/events/EventBus";
 import { specialContracts, type Contract } from "../../engine/progression/SpecialContracts";
-import { techTree, type TechNode, type TechBranch } from "../../engine/progression/TechTree";
+import { HexTechTree } from "./HexTechTree";
 import { audioManager } from "../../engine/audio/AudioManager";
 import "./HudRoot.css";
 
@@ -81,9 +81,9 @@ export function HudRoot({ gameApp }: HudRootProps) {
         </div>
       )}
 
-      {/* Tech Tree Modal */}
+      {/* Tech Tree Modal (Hex Grid) */}
       {isTechTreeOpen && (
-        <TechTreeModal
+        <HexTechTree
           dataPoints={researchData}
           onSpendData={(cost) => setResearchData((prev) => Math.max(0, prev - cost))}
           onClose={() => setIsTechTreeOpen(false)}
@@ -172,95 +172,6 @@ function DirectivesOverlay() {
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-// ─── Tech Tree Modal ──────────────────────────────────────────────────────────
-
-interface TechTreeModalProps {
-  dataPoints: number;
-  onSpendData: (cost: number) => void;
-  onClose: () => void;
-}
-
-function TechTreeModal({ dataPoints, onSpendData, onClose }: TechTreeModalProps) {
-  const [nodes, setNodes] = useState<TechNode[]>(techTree.getAllNodes());
-
-  const handleUnlock = (nodeId: string) => {
-    const res = techTree.unlock(nodeId, dataPoints);
-    if (res.success) {
-      audioManager.playPowerUp();
-      onSpendData(res.cost);
-      setNodes([...techTree.getAllNodes()]);
-    }
-  };
-
-  const branches: Array<{ id: TechBranch; label: string; cls: string }> = [
-    { id: "engineering", label: "ENGINEERING", cls: "engineering" },
-    { id: "operations", label: "OPERATIONS", cls: "operations" },
-    { id: "science", label: "SCIENCE", cls: "science" },
-  ];
-
-  return (
-    <div className="techtree-modal">
-      <div className="techtree-header">
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <h2 className="techtree-title">RESEARCH & TECHNOLOGY TREE</h2>
-          <span className="techtree-data-badge">RESEARCH DATA: {dataPoints}</span>
-        </div>
-        <button className="techtree-close-btn" onClick={onClose}>
-          ✕
-        </button>
-      </div>
-
-      <div className="techtree-branches">
-        {branches.map((branch) => {
-          const branchNodes = nodes
-            .filter((n) => n.branch === branch.id)
-            .sort((a, b) => a.cost - b.cost);
-
-          return (
-            <div key={branch.id} className="techtree-branch-col">
-              <div className={`branch-title ${branch.cls}`}>⬡ {branch.label}</div>
-              {branchNodes.map((node) => {
-                const canUnlock = !node.unlocked && techTree.canUnlock(node.id);
-                const hasEnoughData = dataPoints >= node.cost;
-
-                return (
-                  <div
-                    key={node.id}
-                    className={`tech-node-card ${node.unlocked ? "unlocked" : canUnlock ? "can-unlock" : ""}`}
-                  >
-                    <div className="node-name">{node.displayName}</div>
-                    <div className="node-desc">{node.description}</div>
-                    <div className="node-footer">
-                      <span className="node-cost">{node.cost} DATA</span>
-                      {node.unlocked ? (
-                        <button className="node-btn unlocked" disabled>
-                          ✓ ACTIVE
-                        </button>
-                      ) : canUnlock ? (
-                        <button
-                          className="node-btn unlock"
-                          disabled={!hasEnoughData}
-                          onClick={() => handleUnlock(node.id)}
-                        >
-                          {hasEnoughData ? "UNLOCK" : "NEED DATA"}
-                        </button>
-                      ) : (
-                        <button className="node-btn locked" disabled>
-                          LOCKED
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }

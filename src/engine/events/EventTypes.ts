@@ -101,6 +101,13 @@ export interface ContractCompletedPayload {
   rewardData: number;
 }
 
+export interface VIPContractFailedPayload {
+  contractId: string;
+  reason: string;
+  gForce: number;
+  tiltDeg: number;
+}
+
 /** Exhaustive map of all game events → their payload types */
 export interface GameEventMap {
   PAYLOAD_TOUCHDOWN: TouchdownPayload;
@@ -121,4 +128,5 @@ export interface GameEventMap {
   AUDIO_CONTEXT_UNLOCKED: Record<string, never>;
   CONTRACT_COMPLETED: ContractCompletedPayload;
   PLANET_UNLOCKED: { planetId: string };
+  VIP_CONTRACT_FAILED: VIPContractFailedPayload;
 }

@@ -27,6 +27,8 @@ import { getPlanetById } from "../constants/planets";
 import { PAYLOAD_PROFILES } from "../constants/physics";
 import type { ModuleType } from "../engine/grid/types";
 import { audioManager } from "../engine/audio/AudioManager";
+import { HazardSystem } from "../engine/physics/HazardSystem";
+import { HazardRenderer } from "../engine/entities/HazardRenderer";
 
 export class DescendScene {
   readonly container: Container;
@@ -39,6 +41,8 @@ export class DescendScene {
   private descendSystem!: DescendPhaseSystem;
   private backgroundGraphics!: Graphics;
   private terrainGraphics!: Graphics;
+  private hazardSystem!: HazardSystem;
+  private hazardRenderer!: HazardRenderer;
   private surfaceY = 0;
 
   private get activeModule(): ModuleType {
@@ -97,12 +101,18 @@ export class DescendScene {
     // ── Input System ─────────────────────────────────────────────────────────
     this.inputSystem = new InputSystem(this.gameApp.app.canvas as HTMLCanvasElement);
 
+    // ── Environmental Hazards ────────────────────────────────────────────────
+    this.hazardSystem = new HazardSystem(this.activePlanetId, width, this.surfaceY);
+    this.hazardRenderer = new HazardRenderer(this.hazardSystem.getHazards());
+    this.container.addChild(this.hazardRenderer.container);
+
     // ── Descend Phase System ─────────────────────────────────────────────────
     this.descendSystem = new DescendPhaseSystem(
       this.physicsWorld,
       this.inputSystem,
       landerState,
       this.activePlanetId,
+      this.hazardSystem,
     );
 
     // ── PixiJS Entities ──────────────────────────────────────────────────────
@@ -141,6 +151,9 @@ export class DescendScene {
 
     // Update physics
     this.descendSystem.update(ticker);
+
+    // Update environmental hazard visuals
+    this.hazardRenderer.update(ticker.deltaMS);
 
     // Audio SFX updates
     if (inputState.thrust > 0 && state.fuelKg > 0) {
@@ -226,6 +239,7 @@ export class DescendScene {
 
   destroy(): void {
     audioManager.stopThruster();
+    this.hazardRenderer?.destroy();
     this.gameApp.app.ticker.remove(this.onTick);
     this.descendSystem?.destroy();
     this.physicsWorld?.destroy();

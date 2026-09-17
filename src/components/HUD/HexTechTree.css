@@ -1,0 +1,240 @@
+/* HexTechTree.css — Hexagonal Grid Meta-Progression UI */
+
+.hex-tree-overlay {
+  position: fixed;
+  inset: 20px;
+  background: rgba(5, 8, 17, 0.97);
+  border: 1px solid var(--color-plasma);
+  backdrop-filter: blur(16px);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85);
+  animation: fade-in 0.25s ease-out;
+  pointer-events: auto;
+}
+
+.hex-tree-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--color-panel-border);
+  padding-bottom: var(--space-3);
+}
+
+.hex-tree-title-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.hex-tree-title {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--color-plasma);
+  letter-spacing: 0.1em;
+  margin: 0;
+}
+
+.hex-tree-data-balance {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #ffaa00;
+  background: rgba(255, 170, 0, 0.12);
+  border: 1px solid rgba(255, 170, 0, 0.4);
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.05em;
+}
+
+.hex-tree-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-titanium);
+  font-size: 1.6rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: color 0.2s ease;
+}
+
+.hex-tree-close-btn:hover {
+  color: #fff;
+}
+
+.hex-tree-content {
+  display: flex;
+  flex: 1;
+  gap: var(--space-6);
+  overflow: hidden;
+}
+
+.hex-tree-canvas-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: radial-gradient(circle at center, rgba(0, 212, 255, 0.03) 0%, transparent 70%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-md);
+  overflow: auto;
+}
+
+.hex-node-group {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.hex-node-group:hover {
+  transform: scale(1.04);
+}
+
+.hex-node-group.locked {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.hex-node-group.unlocked polygon {
+  fill: #0c1a2e;
+  stroke: #00ff88;
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 8px rgba(0, 255, 136, 0.5));
+}
+
+.hex-node-group.can-unlock polygon {
+  fill: #0c1322;
+  stroke: #00d4ff;
+  stroke-width: 2;
+  filter: drop-shadow(0 0 6px rgba(0, 212, 255, 0.4));
+  animation: pulse-glow 2s infinite ease-in-out;
+}
+
+.hex-node-group.locked polygon {
+  fill: #080d16;
+  stroke: #1e293b;
+  stroke-width: 1.5;
+}
+
+.hex-node-text-name {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  fill: #ffffff;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+.hex-node-text-cost {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 600;
+  fill: #ffaa00;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+.hex-tree-sidebar {
+  width: 260px;
+  background: rgba(12, 19, 34, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.sidebar-title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0;
+}
+
+.sidebar-branch-tag {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  width: fit-content;
+}
+
+.sidebar-branch-tag.engineering {
+  background: rgba(0, 255, 136, 0.15);
+  color: #00ff88;
+}
+.sidebar-branch-tag.operations {
+  background: rgba(0, 212, 255, 0.15);
+  color: #00d4ff;
+}
+.sidebar-branch-tag.science {
+  background: rgba(255, 170, 0, 0.15);
+  color: #ffaa00;
+}
+
+.sidebar-desc {
+  font-size: 0.85rem;
+  color: var(--color-titanium);
+  line-height: 1.5;
+}
+
+.sidebar-cost {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #ffaa00;
+}
+
+.sidebar-action-btn {
+  margin-top: auto;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sidebar-action-btn.unlock {
+  background: var(--color-plasma);
+  color: #070b14;
+}
+
+.sidebar-action-btn.unlock:hover {
+  background: #33ddff;
+  box-shadow: 0 0 16px rgba(0, 212, 255, 0.4);
+}
+
+.sidebar-action-btn.unlocked {
+  background: rgba(0, 255, 136, 0.2);
+  color: #00ff88;
+  cursor: default;
+}
+
+.sidebar-action-btn.disabled {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-titanium);
+  cursor: not-allowed;
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    stroke-opacity: 0.7;
+  }
+  50% {
+    stroke-opacity: 1;
+    filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.8));
+  }
+}
