@@ -46,12 +46,15 @@ export class DescendScene {
   private hazardSystem!: HazardSystem;
   private hazardRenderer!: HazardRenderer;
   private surfaceY = 0;
+  private heightmap: number[] = [];
+  private sampleStep = 0;
   private touchdownTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private unsubTouchdown: (() => void) | null = null;
 
   // Kinetic Juice: Procedural Camera Shake & Horizontal Dust Clouds
   private cameraShakeTrauma = 0;
   private dustGraphics!: Graphics;
+  private controlsGfx!: Graphics;
   private dustParticles: Array<{
     x: number;
     y: number;
@@ -101,6 +104,8 @@ export class DescendScene {
       roughness: planet.terrainRoughness,
       hasCanyonWalls: planet.hasCanyonWalls,
     });
+    this.heightmap = heightmap;
+    this.sampleStep = sampleStep;
     this.drawTerrain(heightmap, sampleStep, width, height, planet.terrainColor);
     this.container.addChild(this.terrainGraphics);
 
@@ -118,7 +123,7 @@ export class DescendScene {
     const landerState = createLanderBody({
       moduleType: this.activeModule,
       startX: width / 2,
-      startY: height * 0.1,
+      startY: Math.max(80, height * 0.2),
     });
     this.physicsWorld.addBody(landerState.body);
 
@@ -222,11 +227,18 @@ export class DescendScene {
 
     // Update telemetry reticle
     const profile = PAYLOAD_PROFILES[this.activeModule];
-    this.telemetryReticle.update(state, profile?.impactTolerance ?? 5, this.surfaceY);
+    this.telemetryReticle.update(
+      state,
+      profile?.impactTolerance ?? 5,
+      this.surfaceY,
+      this.heightmap,
+      this.sampleStep,
+    );
 
     // ── Kinetic Juice Updates ──────────────────────────────────────────────
     this.updateDust(ticker.deltaMS);
     this.updateCameraShake(ticker.deltaMS);
+    this.updateControlsGfx();
   };
 
   private spawnTouchdownDust(
@@ -355,19 +367,196 @@ export class DescendScene {
   }
 
   private buildControlsLabel(width: number, height: number): void {
+    // 1. Controls legend at bottom center
     const label = new Text({
-      text: "W / ↑ = Thrust   A / ← = Rotate CCW   D / → = Rotate CW",
+      text: "W / ↑: Full Thrust | S / ↓: Hover Brake | A / D: Steer | SAS Gyros Active",
       style: new TextStyle({
         fontFamily: "JetBrains Mono",
         fontSize: 11,
         fontWeight: "400",
-        fill: 0x3a4a5a,
+        fill: 0x4a6078,
       }),
     });
     label.anchor.set(0.5, 1);
     label.x = width / 2;
-    label.y = height - 12;
+    label.y = height - 8;
     this.container.addChild(label);
+
+    // 2. Interactive control HUD overlay for mobile and desktop feedback
+    this.controlsGfx = new Graphics();
+    this.container.addChild(this.controlsGfx);
+
+    // Interactive button hit areas for direct mouse/touch engagement
+    const btnSteerLeft = new Container();
+    btnSteerLeft.eventMode = "static";
+    btnSteerLeft.cursor = "pointer";
+    btnSteerLeft.hitArea = {
+      contains: (x, y) => x >= 16 && x <= 92 && y >= height - 68 && y <= height - 28,
+    };
+    btnSteerLeft.on("pointerdown", () => this.inputSystem.setVirtualRotation(-1));
+    btnSteerLeft.on("pointerup", () => this.inputSystem.setVirtualRotation(0));
+    btnSteerLeft.on("pointerupoutside", () => this.inputSystem.setVirtualRotation(0));
+    this.container.addChild(btnSteerLeft);
+
+    const btnSteerRight = new Container();
+    btnSteerRight.eventMode = "static";
+    btnSteerRight.cursor = "pointer";
+    btnSteerRight.hitArea = {
+      contains: (x, y) => x >= 96 && x <= 172 && y >= height - 68 && y <= height - 28,
+    };
+    btnSteerRight.on("pointerdown", () => this.inputSystem.setVirtualRotation(1));
+    btnSteerRight.on("pointerup", () => this.inputSystem.setVirtualRotation(0));
+    btnSteerRight.on("pointerupoutside", () => this.inputSystem.setVirtualRotation(0));
+    this.container.addChild(btnSteerRight);
+
+    const btnThrust = new Container();
+    btnThrust.eventMode = "static";
+    btnThrust.cursor = "pointer";
+    btnThrust.hitArea = {
+      contains: (x, y) =>
+        x >= width - 112 && x <= width - 18 && y >= height - 92 && y <= height - 56,
+    };
+    btnThrust.on("pointerdown", () => {
+      this.inputSystem.setVirtualThrust(1.0);
+      HapticManager.triggerThrusterPulse();
+    });
+    btnThrust.on("pointerup", () => this.inputSystem.setVirtualThrust(0));
+    btnThrust.on("pointerupoutside", () => this.inputSystem.setVirtualThrust(0));
+    this.container.addChild(btnThrust);
+
+    const btnHover = new Container();
+    btnHover.eventMode = "static";
+    btnHover.cursor = "pointer";
+    btnHover.hitArea = {
+      contains: (x, y) =>
+        x >= width - 112 && x <= width - 18 && y >= height - 50 && y <= height - 14,
+    };
+    btnHover.on("pointerdown", () => {
+      this.inputSystem.setVirtualThrust(0.45);
+      HapticManager.triggerThrusterPulse();
+    });
+    btnHover.on("pointerup", () => this.inputSystem.setVirtualThrust(0));
+    btnHover.on("pointerupoutside", () => this.inputSystem.setVirtualThrust(0));
+    this.container.addChild(btnHover);
+
+    // Steer Left Label
+    const steerLeftText = new Text({
+      text: "◄ STEER",
+      style: new TextStyle({
+        fontFamily: "Outfit, sans-serif",
+        fontSize: 12,
+        fontWeight: "700",
+        fill: 0x8bb8e8,
+      }),
+    });
+    steerLeftText.anchor.set(0.5, 0.5);
+    steerLeftText.x = 54;
+    steerLeftText.y = height - 48;
+    this.container.addChild(steerLeftText);
+
+    // Steer Right Label
+    const steerRightText = new Text({
+      text: "STEER ►",
+      style: new TextStyle({
+        fontFamily: "Outfit, sans-serif",
+        fontSize: 12,
+        fontWeight: "700",
+        fill: 0x8bb8e8,
+      }),
+    });
+    steerRightText.anchor.set(0.5, 0.5);
+    steerRightText.x = 134;
+    steerRightText.y = height - 48;
+    this.container.addChild(steerRightText);
+
+    // Main Thruster Label
+    const thrustText = new Text({
+      text: "▲ THRUST",
+      style: new TextStyle({
+        fontFamily: "Outfit, sans-serif",
+        fontSize: 12,
+        fontWeight: "800",
+        fill: 0x00e5ff,
+      }),
+    });
+    thrustText.anchor.set(0.5, 0.5);
+    thrustText.x = width - 65;
+    thrustText.y = height - 74;
+    this.container.addChild(thrustText);
+
+    // Hover Throttle Label
+    const hoverText = new Text({
+      text: "▼ HOVER",
+      style: new TextStyle({
+        fontFamily: "Outfit, sans-serif",
+        fontSize: 11,
+        fontWeight: "700",
+        fill: 0xffaa00,
+      }),
+    });
+    hoverText.anchor.set(0.5, 0.5);
+    hoverText.x = width - 65;
+    hoverText.y = height - 32;
+    this.container.addChild(hoverText);
+
+    // SAS Status Indicator
+    const sasText = new Text({
+      text: "● SAS: GYRO AUTO-LEVEL",
+      style: new TextStyle({
+        fontFamily: "JetBrains Mono",
+        fontSize: 10,
+        fontWeight: "600",
+        fill: 0x38bdf8,
+      }),
+    });
+    sasText.anchor.set(0.5, 0);
+    sasText.x = width / 2;
+    sasText.y = 12;
+    this.container.addChild(sasText);
+  }
+
+  private updateControlsGfx(): void {
+    if (!this.controlsGfx) return;
+    const { width, height } = this.gameApp.app.screen;
+    const states = this.inputSystem.getControlActiveStates();
+    const g = this.controlsGfx;
+    g.clear();
+
+    // Steer Left button box
+    g.roundRect(16, height - 68, 76, 40, 6);
+    g.fill({ color: states.rotLeft ? 0x00e5ff : 0x07111e, alpha: states.rotLeft ? 0.35 : 0.22 });
+    g.stroke({
+      color: states.rotLeft ? 0x00e5ff : 0x224466,
+      width: states.rotLeft ? 2 : 1,
+      alpha: states.rotLeft ? 0.9 : 0.45,
+    });
+
+    // Steer Right button box
+    g.roundRect(96, height - 68, 76, 40, 6);
+    g.fill({ color: states.rotRight ? 0x00e5ff : 0x07111e, alpha: states.rotRight ? 0.35 : 0.22 });
+    g.stroke({
+      color: states.rotRight ? 0x00e5ff : 0x224466,
+      width: states.rotRight ? 2 : 1,
+      alpha: states.rotRight ? 0.9 : 0.45,
+    });
+
+    // Main Thruster button box
+    g.roundRect(width - 112, height - 92, 94, 36, 6);
+    g.fill({ color: states.thrust ? 0x00e5ff : 0x07111e, alpha: states.thrust ? 0.4 : 0.22 });
+    g.stroke({
+      color: states.thrust ? 0x00e5ff : 0x224466,
+      width: states.thrust ? 2 : 1,
+      alpha: states.thrust ? 0.9 : 0.45,
+    });
+
+    // Hover button box
+    g.roundRect(width - 112, height - 50, 94, 36, 6);
+    g.fill({ color: states.hover ? 0xffaa00 : 0x07111e, alpha: states.hover ? 0.4 : 0.22 });
+    g.stroke({
+      color: states.hover ? 0xffaa00 : 0x443322,
+      width: states.hover ? 2 : 1,
+      alpha: states.hover ? 0.9 : 0.45,
+    });
   }
 
   destroy(): void {

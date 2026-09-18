@@ -129,6 +129,73 @@ describe("Phase 4: Mobile Split-Screen Controls & Gesture Isolation", () => {
     expect(state.thrust).toBe(0);
     expect(state.rotation).toBe(0);
   });
+
+  it("activates immediate steer CCW on left quadrant tap without needing drag", () => {
+    // Canvas width is 800, canvasMidX is 400.
+    // Left quadrant tap: clientX = 120 (< 400 * 0.45 = 180)
+    canvas.dispatchEvent(
+      new TestPointerEvent("pointerdown", {
+        clientX: 120,
+        pointerId: 10,
+        bubbles: true,
+        cancelable: true,
+      }) as unknown as PointerEvent,
+    );
+
+    const state = inputSystem.getState();
+    expect(state.rotation).toBe(-1); // Immediate CCW rotation
+
+    const activeStates = inputSystem.getControlActiveStates();
+    expect(activeStates.rotLeft).toBe(true);
+    expect(activeStates.rotRight).toBe(false);
+
+    canvas.dispatchEvent(
+      new TestPointerEvent("pointerup", {
+        clientX: 120,
+        pointerId: 10,
+        bubbles: true,
+        cancelable: true,
+      }) as unknown as PointerEvent,
+    );
+  });
+
+  it("activates immediate steer CW on right quadrant tap of steering half", () => {
+    // Steering right quadrant tap: clientX = 280 (> 400 * 0.55 = 220, < 400)
+    canvas.dispatchEvent(
+      new TestPointerEvent("pointerdown", {
+        clientX: 280,
+        pointerId: 11,
+        bubbles: true,
+        cancelable: true,
+      }) as unknown as PointerEvent,
+    );
+
+    const state = inputSystem.getState();
+    expect(state.rotation).toBe(1); // Immediate CW rotation
+
+    canvas.dispatchEvent(
+      new TestPointerEvent("pointerup", {
+        clientX: 280,
+        pointerId: 11,
+        bubbles: true,
+        cancelable: true,
+      }) as unknown as PointerEvent,
+    );
+  });
+
+  it("supports gentle hover / soft landing throttle via KeyS or ArrowDown", () => {
+    window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyS" }));
+
+    const state = inputSystem.getState();
+    expect(state.thrust).toBe(0.45);
+
+    const activeStates = inputSystem.getControlActiveStates();
+    expect(activeStates.hover).toBe(true);
+    expect(activeStates.thrust).toBe(false);
+
+    window.dispatchEvent(new KeyboardEvent("keyup", { code: "KeyS" }));
+    expect(inputSystem.getState().thrust).toBe(0);
+  });
 });
 
 describe("Phase 4: HapticManager Vibration Integration", () => {

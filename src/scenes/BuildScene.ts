@@ -690,11 +690,15 @@ export class BuildScene {
     btn.eventMode = "static";
     btn.cursor = "pointer";
 
-    btn.on("pointertap", () => {
+    const onNextDrop = () => {
       audioManager.playUIClick();
       HapticManager.triggerUIClick();
       void this.gameApp.transitionTo("descend");
-    });
+    };
+
+    btn.on("pointertap", onNextDrop);
+    btn.on("pointerdown", onNextDrop);
+    btn.on("click", onNextDrop);
 
     btn.on("pointerover", () => {
       btnBg.clear();

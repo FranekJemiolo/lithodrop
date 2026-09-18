@@ -176,14 +176,18 @@ export class TitleScene {
       btnBg.fill({ color: 0x00d4ff });
     });
 
-    btnContainer.on("pointertap", () => {
+    const onStart = () => {
       // Unlock Web Audio API (must happen on user gesture)
       eventBus.emit("AUDIO_CONTEXT_UNLOCKED", {});
       audioManager.unlock();
       audioManager.playUIClick();
       // Transition to tutorial
       void this.gameApp.transitionTo("tutorial");
-    });
+    };
+
+    btnContainer.on("pointertap", onStart);
+    btnContainer.on("pointerdown", onStart);
+    btnContainer.on("click", onStart);
 
     this.container.addChild(btnContainer);
 
@@ -199,8 +203,8 @@ export class TitleScene {
       style: new TextStyle({
         fontFamily: "Outfit",
         fontSize: 14,
-        fontWeight: "700",
-        fill: 0x00d4ff,
+        fontWeight: "600",
+        fill: 0x8b9ab5,
         letterSpacing: 2,
       }),
     });
@@ -228,12 +232,16 @@ export class TitleScene {
       campBg.stroke({ color: 0x00d4ff, alpha: 0.5, width: 1.5 });
     });
 
-    campContainer.on("pointertap", () => {
+    const onCampaign = () => {
       eventBus.emit("AUDIO_CONTEXT_UNLOCKED", {});
       audioManager.unlock();
       audioManager.playUIClick();
       void this.gameApp.transitionTo("campaign");
-    });
+    };
+
+    campContainer.on("pointertap", onCampaign);
+    campContainer.on("pointerdown", onCampaign);
+    campContainer.on("click", onCampaign);
 
     this.container.addChild(campContainer);
 

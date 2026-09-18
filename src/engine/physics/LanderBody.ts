@@ -127,15 +127,50 @@ export function applyThrust(
 }
 
 /**
- * Apply RCS rotation torque to the lander body.
+ * Apply RCS rotation torque with active SAS gyroscopic stabilization to the lander body.
  *
- * @param direction - -1 (counterclockwise) or +1 (clockwise)
+ * When commanding rotation (direction !== 0):
+ *   Applies torque calibrated to the payload's rotational inertia so all modules
+ *   respond with consistent, predictable steering authority. Caps angular velocity
+ *   to prevent uncontrollable death-spins.
+ *
+ * When releasing rotation (direction === 0):
+ *   Active SAS (Stability Augmentation System) engages:
+ *   - Dampens angular velocity smoothly to zero within ~0.25s, holding current attitude.
+ *   - Provides gentle auto-level restoring torque if within 60° of vertical,
+ *     ensuring clean, upright touchdowns.
+ *
+ * @param body - Matter.js body
+ * @param direction - -1 (counterclockwise), 0 (hold attitude / auto-level), or +1 (clockwise)
  * @param torqueNm - Torque magnitude in Newton-meters
  */
 export function applyRCS(body: Matter.Body, direction: -1 | 0 | 1, torqueNm: number): void {
-  if (direction === 0) return;
-  // Matter.js torque: positive = clockwise
-  body.torque += (direction * torqueNm) / 1_000_000;
+  const REFERENCE_INERTIA = 15000;
+  const inertiaFactor = Math.max(0.7, Math.min(2.5, Math.sqrt(body.inertia / REFERENCE_INERTIA)));
+  const scaledTorque = (torqueNm / 1_000_000) * (body.inertia / REFERENCE_INERTIA) * inertiaFactor;
+
+  if (direction !== 0) {
+    // Apply commanded steering torque calibrated to inertia
+    body.torque += direction * scaledTorque;
+
+    // Cap maximum angular velocity for comfortable control (~2.6 rad/s)
+    const maxAngularVel = 0.045;
+    if (Math.abs(body.angularVelocity) > maxAngularVel) {
+      Matter.Body.setAngularVelocity(body, Math.sign(body.angularVelocity) * maxAngularVel);
+    }
+  } else {
+    // SAS Active Stabilization: rotational damping
+    Matter.Body.setAngularVelocity(body, body.angularVelocity * 0.88);
+    if (Math.abs(body.angularVelocity) < 0.0003) {
+      Matter.Body.setAngularVelocity(body, 0);
+    }
+
+    // SAS Auto-level assist: gently restores to upright if within 60° (1.05 rad)
+    if (Math.abs(body.angle) < 1.05) {
+      const restoringTorque = -Math.sin(body.angle) * (body.inertia / REFERENCE_INERTIA) * 0.14;
+      body.torque += restoringTorque;
+    }
+  }
 }
 
 /**

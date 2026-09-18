@@ -139,3 +139,22 @@ function mulberry32(seed: number): () => number {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+
+/**
+ * Get the interpolated terrain surface Y position at a given X coordinate.
+ */
+export function getTerrainHeightAtX(
+  heightmap: number[] | undefined,
+  sampleStep: number | undefined,
+  x: number,
+  defaultSurfaceY: number,
+): number {
+  if (!heightmap || heightmap.length === 0 || !sampleStep || sampleStep <= 0) {
+    return defaultSurfaceY;
+  }
+  const idx = Math.floor(x / sampleStep);
+  if (idx < 0) return heightmap[0] ?? defaultSurfaceY;
+  if (idx >= heightmap.length - 1) return heightmap[heightmap.length - 1] ?? defaultSurfaceY;
+  const t = (x - idx * sampleStep) / sampleStep;
+  return heightmap[idx] * (1 - t) + heightmap[idx + 1] * t;
+}

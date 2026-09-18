@@ -493,42 +493,87 @@ export class TutorialScene {
   private buildNavigationControls(width: number, height: number): void {
     const cx = width / 2;
     const btnY = height - 55;
+    const isNarrow = width < 580;
+    const gap = 12;
 
-    // PREVIOUS BUTTON
-    const prevBtn = this.createButton("◀ PREVIOUS", 140, 42, 0x1e293b, () => {
-      if (this.currentStageIndex > 0) {
-        this.currentStageIndex--;
-        audioManager.playUIClick();
-        this.renderTabs(width, height);
-        this.renderStage(width, height);
-      }
-    });
-    prevBtn.x = cx - 220;
-    prevBtn.y = btnY;
-    this.container.addChild(prevBtn);
+    if (isNarrow) {
+      const btnW = Math.floor((width - 40 - gap * 2) / 3);
+      const startX = 20;
 
-    // NEXT BUTTON
-    const nextBtn = this.createButton("NEXT PROTOCOL ▶", 160, 42, 0x0284c7, () => {
-      if (this.currentStageIndex < STAGES.length - 1) {
-        this.currentStageIndex++;
-        audioManager.playUIClick();
-        this.renderTabs(width, height);
-        this.renderStage(width, height);
-      } else {
+      const prevBtn = this.createButton("◀ PREV", btnW, 42, 0x1e293b, () => {
+        if (this.currentStageIndex > 0) {
+          this.currentStageIndex--;
+          audioManager.playUIClick();
+          this.renderTabs(width, height);
+          this.renderStage(width, height);
+        }
+      });
+      prevBtn.x = startX;
+      prevBtn.y = btnY;
+      this.container.addChild(prevBtn);
+
+      const nextBtn = this.createButton("NEXT ▶", btnW, 42, 0x0284c7, () => {
+        if (this.currentStageIndex < STAGES.length - 1) {
+          this.currentStageIndex++;
+          audioManager.playUIClick();
+          this.renderTabs(width, height);
+          this.renderStage(width, height);
+        } else {
+          this.launchMission();
+        }
+      });
+      nextBtn.x = startX + btnW + gap;
+      nextBtn.y = btnY;
+      this.container.addChild(nextBtn);
+
+      const launchBtn = this.createButton("LAUNCH 🚀", btnW, 42, 0x10b981, () => {
         this.launchMission();
-      }
-    });
-    nextBtn.x = cx - 50;
-    nextBtn.y = btnY;
-    this.container.addChild(nextBtn);
+      });
+      launchBtn.x = startX + (btnW + gap) * 2;
+      launchBtn.y = btnY;
+      this.container.addChild(launchBtn);
+    } else {
+      const prevW = 140;
+      const nextW = 160;
+      const launchW = 180;
+      const totalW = prevW + nextW + launchW + gap * 2;
+      let curX = cx - totalW / 2;
 
-    // LAUNCH / CERTIFY BUTTON
-    const launchBtn = this.createButton("CERTIFY & LAUNCH", 180, 42, 0x10b981, () => {
-      this.launchMission();
-    });
-    launchBtn.x = cx + 130;
-    launchBtn.y = btnY;
-    this.container.addChild(launchBtn);
+      const prevBtn = this.createButton("◀ PREVIOUS", prevW, 42, 0x1e293b, () => {
+        if (this.currentStageIndex > 0) {
+          this.currentStageIndex--;
+          audioManager.playUIClick();
+          this.renderTabs(width, height);
+          this.renderStage(width, height);
+        }
+      });
+      prevBtn.x = curX;
+      prevBtn.y = btnY;
+      this.container.addChild(prevBtn);
+      curX += prevW + gap;
+
+      const nextBtn = this.createButton("NEXT PROTOCOL ▶", nextW, 42, 0x0284c7, () => {
+        if (this.currentStageIndex < STAGES.length - 1) {
+          this.currentStageIndex++;
+          audioManager.playUIClick();
+          this.renderTabs(width, height);
+          this.renderStage(width, height);
+        } else {
+          this.launchMission();
+        }
+      });
+      nextBtn.x = curX;
+      nextBtn.y = btnY;
+      this.container.addChild(nextBtn);
+      curX += nextW + gap;
+
+      const launchBtn = this.createButton("CERTIFY & LAUNCH", launchW, 42, 0x10b981, () => {
+        this.launchMission();
+      });
+      launchBtn.x = curX;
+      launchBtn.y = btnY;
+      this.container.addChild(launchBtn);
+    }
   }
 
   private createButton(
@@ -565,6 +610,8 @@ export class TutorialScene {
     btn.addChild(text);
 
     btn.on("pointertap", onClick);
+    btn.on("pointerdown", onClick);
+    btn.on("click", onClick);
     return btn;
   }
 

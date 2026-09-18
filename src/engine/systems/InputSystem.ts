@@ -38,9 +38,12 @@ export class InputSystem {
 
   // Canvas split point (updated on resize)
   private canvasMidX = 0;
+  private canvasHeight = 0;
+  private rightTouchY = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvasMidX = canvas.width / 2;
+    this.canvasHeight = canvas.height;
 
     // Keyboard
     window.addEventListener("keydown", this.onKeyDown);
@@ -58,23 +61,78 @@ export class InputSystem {
     this.prevKeys = new Set(this.keys);
   }
 
-  /** Returns the current normalized input state */
-  getState(): InputState {
+  private virtualThrust = 0;
+  private virtualRotation: -1 | 0 | 1 = 0;
+
+  /** Programmatic control override for on-screen UI buttons */
+  setVirtualThrust(thrust: number): void {
+    this.virtualThrust = Math.max(0, Math.min(1, thrust));
+  }
+
+  /** Programmatic rotation override for on-screen UI buttons */
+  setVirtualRotation(rotation: -1 | 0 | 1): void {
+    this.virtualRotation = rotation;
+  }
+
+  /** Returns active status for individual control channels (used for HUD visual feedback) */
+  getControlActiveStates(): {
+    thrust: boolean;
+    hover: boolean;
+    rotLeft: boolean;
+    rotRight: boolean;
+  } {
     const thrustKey = this.keys.has("KeyW") || this.keys.has("ArrowUp") || this.keys.has("Space");
+    const hoverKey = this.keys.has("KeyS") || this.keys.has("ArrowDown");
     const rotLeftKey = this.keys.has("KeyA") || this.keys.has("ArrowLeft");
     const rotRightKey = this.keys.has("KeyD") || this.keys.has("ArrowRight");
 
-    // Touch: right half = thrust, left half = rotate based on swipe
-    const touchThrust = this.rightPointerDown;
+    const touchHover =
+      this.rightPointerDown && this.rightTouchY > (this.canvasHeight || 600) * 0.72;
+    const touchFullThrust = this.rightPointerDown && !touchHover;
+    const touchRotLeft = this.leftPointerDown && this.leftSwipeDirection === -1;
+    const touchRotRight = this.leftPointerDown && this.leftSwipeDirection === 1;
+
+    const vThrust = this.virtualThrust >= 0.8;
+    const vHover = this.virtualThrust > 0 && this.virtualThrust < 0.8;
+    const vRotLeft = this.virtualRotation === -1;
+    const vRotRight = this.virtualRotation === 1;
+
+    return {
+      thrust: thrustKey || touchFullThrust || vThrust,
+      hover: hoverKey || touchHover || vHover,
+      rotLeft: rotLeftKey || touchRotLeft || vRotLeft,
+      rotRight: rotRightKey || touchRotRight || vRotRight,
+    };
+  }
+
+  /** Returns the current normalized input state */
+  getState(): InputState {
+    const thrustKey = this.keys.has("KeyW") || this.keys.has("ArrowUp") || this.keys.has("Space");
+    const hoverKey = this.keys.has("KeyS") || this.keys.has("ArrowDown");
+    const rotLeftKey = this.keys.has("KeyA") || this.keys.has("ArrowLeft");
+    const rotRightKey = this.keys.has("KeyD") || this.keys.has("ArrowRight");
+
+    // Touch: right half = thrust (lower zone = hover, upper zone = full thrust)
+    let touchThrust = 0;
+    if (this.rightPointerDown) {
+      touchThrust = this.rightTouchY > (this.canvasHeight || 600) * 0.72 ? 0.45 : 1.0;
+    }
+
     const touchRotLeft = this.leftPointerDown && this.leftSwipeDirection === -1;
     const touchRotRight = this.leftPointerDown && this.leftSwipeDirection === 1;
     const touchRotNone = this.leftPointerDown && this.leftSwipeDirection === 0;
 
-    const thrust = thrustKey || touchThrust ? 1 : 0;
+    let thrust = 0;
+    if (thrustKey) thrust = 1.0;
+    else if (hoverKey)
+      thrust = 0.45; // Fine-tune hover / soft-landing thrust
+    else if (this.virtualThrust > 0) thrust = this.virtualThrust;
+    else if (touchThrust > 0) thrust = touchThrust;
 
     let rotation: -1 | 0 | 1 = 0;
     if (rotLeftKey || touchRotLeft) rotation = -1;
     else if (rotRightKey || touchRotRight) rotation = 1;
+    else if (this.virtualRotation !== 0) rotation = this.virtualRotation;
     else if (touchRotNone && this.leftPointerDown) rotation = 0;
 
     // Overclock: Shift+Space or double-tap (tracked separately)
@@ -89,9 +147,10 @@ export class InputSystem {
     return { thrust, rotation, overclockPressed, pausePressed };
   }
 
-  /** Update canvas split point (call on window resize) */
-  updateCanvasWidth(width: number): void {
+  /** Update canvas dimensions (call on window resize) */
+  updateCanvasWidth(width: number, height?: number): void {
     this.canvasMidX = width / 2;
+    if (height !== undefined) this.canvasHeight = height;
   }
 
   destroy(): void {
@@ -114,15 +173,24 @@ export class InputSystem {
     e.preventDefault();
     const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
     const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
 
     if (x < this.canvasMidX) {
       this.leftPointerDown = true;
       this.activeLeftPointerId = e.pointerId;
       this.leftStartX = x;
-      this.leftSwipeDirection = 0;
+      // Immediate steer on tap based on left/right half of the steering quadrant:
+      if (x < this.canvasMidX * 0.45) {
+        this.leftSwipeDirection = -1; // Tap left = Steer CCW
+      } else if (x > this.canvasMidX * 0.55) {
+        this.leftSwipeDirection = 1; // Tap right = Steer CW
+      } else {
+        this.leftSwipeDirection = 0; // Neutral deadband / swipe trigger
+      }
     } else {
       this.rightPointerDown = true;
       this.activeRightPointerId = e.pointerId;
+      this.rightTouchY = y;
       HapticManager.triggerThrusterPulse();
     }
   };
@@ -138,6 +206,10 @@ export class InputSystem {
       } else if (Math.abs(e.movementX) > 1.5) {
         this.leftSwipeDirection = e.movementX > 0 ? 1 : -1;
       }
+    }
+    if (e.pointerId === this.activeRightPointerId && this.rightPointerDown) {
+      const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
+      this.rightTouchY = e.clientY - rect.top;
     }
   };
 

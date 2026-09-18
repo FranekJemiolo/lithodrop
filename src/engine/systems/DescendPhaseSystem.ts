@@ -35,6 +35,8 @@ import {
   calculateDropBounty,
   ATMOSPHERE_DENSITY,
   pixelsToMeters,
+  PLANET_GRAVITY,
+  PIXELS_PER_METER,
 } from "../../constants/physics";
 import type { ModuleType } from "../grid/types";
 
@@ -97,7 +99,14 @@ export class DescendPhaseSystem {
     const dtSeconds = ticker.deltaMS / 1000;
 
     const mods = techTree.getModifiers();
-    const effectiveThrust = THRUSTER_FORCE_N * mods.thrusterForceMultiplier;
+    const planetGravity = PLANET_GRAVITY[this.planetId] ?? 1.62;
+    const gravityScale = (planetGravity / 1000) * PIXELS_PER_METER;
+    // Guaranteed TWR authority: ensure thruster can always overcome local weight (>= 1.85x)
+    const landerWeightForce = this.landerState.body.mass * gravityScale * 1_000_000;
+    const minimumControllableThrust = landerWeightForce * 1.85;
+    const baseThrustWithTWR = Math.max(THRUSTER_FORCE_N, minimumControllableThrust);
+
+    const effectiveThrust = baseThrustWithTWR * mods.thrusterForceMultiplier;
     const effectiveFuelRate = FUEL_CONSUMPTION_RATE * mods.fuelConsumptionMultiplier;
     const effectiveTorque = RCS_TORQUE_NM * mods.rcsTorqueMultiplier;
 
@@ -112,7 +121,7 @@ export class DescendPhaseSystem {
       );
     }
 
-    // Apply RCS rotation
+    // Apply RCS rotation (with active SAS stabilization)
     applyRCS(this.landerState.body, inputState.rotation, effectiveTorque);
 
     // Apply atmospheric drag
@@ -131,6 +140,12 @@ export class DescendPhaseSystem {
     // Step physics
     this.physicsWorld.step(ticker.deltaMS);
 
+    // Lateral drift stabilization: gentle damping to prevent uncontrollable sliding into canyon walls
+    Matter.Body.setVelocity(this.landerState.body, {
+      x: this.landerState.body.velocity.x * 0.995,
+      y: this.landerState.body.velocity.y,
+    });
+
     // Track telemetry (acceleration, G-force, tilt) and check VIP contracts
     this.telemetryTracker.update(
       this.landerState.body,
@@ -142,6 +157,20 @@ export class DescendPhaseSystem {
     const downVel = getDownwardVelocity(this.landerState.body);
     if (downVel > this.landerState.maxDescentVelocity) {
       this.landerState = { ...this.landerState, maxDescentVelocity: downVel };
+    }
+
+    // Atmospheric ceiling safeguard: prevent lander from escaping above visible play area
+    if (this.landerState.body.position.y < 55) {
+      Matter.Body.setPosition(this.landerState.body, {
+        x: this.landerState.body.position.x,
+        y: 55,
+      });
+      if (this.landerState.body.velocity.y < 0) {
+        Matter.Body.setVelocity(this.landerState.body, {
+          x: this.landerState.body.velocity.x,
+          y: 0,
+        });
+      }
     }
 
     // Anti-tunneling boundary safeguard: if high downward velocity penetrates surface level

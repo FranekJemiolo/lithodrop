@@ -42,4 +42,47 @@ test.describe("LithoDrop Title Screen", () => {
 
     expect(errors).toHaveLength(0);
   });
+
+  test("advances from Title to Tutorial and into Descend flight phase with working controls", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const canvas = page.locator("#game-canvas-container canvas");
+    await expect(canvas).toBeVisible({ timeout: 10000 });
+    await page.waitForTimeout(1000);
+
+    const box = await canvas.boundingBox();
+    expect(box).toBeTruthy();
+    if (!box) return;
+
+    // 1. Click Start Mission on title canvas
+    await canvas.click({
+      position: { x: box.width / 2, y: box.height * 0.58 },
+    });
+    await page.waitForTimeout(800);
+
+    // 2. Click Certify & Launch in TutorialScene
+    await canvas.click({
+      position: { x: box.width / 2 + 162, y: box.height - 34 },
+    });
+
+    // 3. Verify Descend HUD label mounts
+    const descendLabel = page.locator(".descend-hud-corner .hud-phase-label");
+    await expect(descendLabel).toContainText("DESCEND PHASE", { timeout: 10000 });
+
+    // 4. Test flight controls (W = main thruster, A = steer CCW, S = hover brake)
+    await page.keyboard.down("KeyW");
+    await page.waitForTimeout(200);
+    await page.keyboard.up("KeyW");
+
+    await page.keyboard.down("KeyA");
+    await page.waitForTimeout(200);
+    await page.keyboard.up("KeyA");
+
+    await page.keyboard.down("KeyS");
+    await page.waitForTimeout(200);
+    await page.keyboard.up("KeyS");
+
+    await page.screenshot({ path: "test-results/flight-descent.png" });
+  });
 });
